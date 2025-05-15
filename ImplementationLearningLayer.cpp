@@ -1,47 +1,19 @@
 #define NOMINMAX
 #include <windows.h>
-
+#include "DecisionComponent.h"
+#include <string>
 #include "ImplementationLearningLayer.h"
 #include "UserInput.h"
 #include "json.hpp"
 #include <fstream>
 #include <ctime>
 #include <sstream>
+#include <numeric>
+#include <algorithm> 
 
 using json = nlohmann::json;
 
-void FeedbackLearningIntegration::createDecisionJournal(HWND hWnd) {
-    currentEntry.context = UserInput::getStringInput(hWnd, "Enter decision context");
-    currentEntry.steps = {
-        UserInput::getStringInput(hWnd, "Step 1 taken"),
-        UserInput::getStringInput(hWnd, "Step 2 taken"),
-        UserInput::getStringInput(hWnd, "Step 3 taken")
-    };
-    currentEntry.confidence = UserInput::getScoreInput(hWnd, "Rate your confidence (1-10)", 1.0f, 10.0f) / 10.0f;
-    currentEntry.lessons = UserInput::getStringInput(hWnd, "Enter lessons learned");
-    
-    learningScore = 8.0f + (currentEntry.confidence * 2.0f);
-    
-    json entry = {
-        {"context", currentEntry.context},
-        {"steps", currentEntry.steps},
-        {"confidence", currentEntry.confidence},
-        {"lessons", currentEntry.lessons},
-        {"timestamp", time(nullptr)}
-    };
-    
-    std::ifstream in("decision_journal.json");
-    json journal;
-    if (in.is_open()) {
-        in >> journal;
-        in.close();
-    }
-    journal["entries"].push_back(entry);
-    
-    std::ofstream out("decision_journal.json");
-    out << journal.dump(4);
-    out.close();
-}
+// Remove createDecisionJournal since it's already defined inline in the header
 
 void FeedbackLearningIntegration::conductDecisionAutopsy(HWND hWnd) {
     float expectedOutcome = UserInput::getScoreInput(hWnd, "Rate expected outcome (1-10)", 1.0f, 10.0f);
@@ -62,8 +34,15 @@ void FeedbackLearningIntegration::updatePersonalDecisionModel(HWND hWnd) {
         decisionPatterns[pattern] = strength;
     }
     
-    pdmScore = std::accumulate(decisionPatterns.begin(), decisionPatterns.end(), 0.0f,
-        [](float sum, const auto& p) { return sum + p.second; }) / decisionPatterns.size() * 10.0f;
+    float sum = std::accumulate(decisionPatterns.begin(), decisionPatterns.end(), 0.0f,
+        [](float acc, const std::pair<const std::string, float>& pair) {
+            return acc + pair.second;
+        });
+    pdmScore = (sum / decisionPatterns.size()) * 10.0f;
+}
+
+void FeedbackLearningIntegration::processLearningEntry(HWND hWnd) {
+    // Implementation if needed
 }
 
 void FeedbackLearningIntegration::execute(HWND hWnd) {
@@ -73,28 +52,28 @@ void FeedbackLearningIntegration::execute(HWND hWnd) {
 }
 
 std::string FeedbackLearningIntegration::getReport() const {
-    std::stringstream report;
-    report << "Feedback & Learning Report:\n";
-    report << "  - Learning Integration Score: " << learningScore << "/10\n";
-    report << "  - PDM Evolution Score: " << pdmScore << "/10\n";
+    std::stringstream rep;
+    rep << "Feedback & Learning Report:\n";
+    rep << "  - Learning Integration Score: " << learningScore << "/10\n";
+    rep << "  - PDM Evolution Score: " << pdmScore << "/10\n";
     
-    report << "  - Decision Journal Entry:\n";
-    report << "    - Context: " << currentEntry.context << "\n";
-    report << "    - Steps: ";
+    rep << "  - Decision Journal Entry:\n";
+    rep << "    - Context: " << currentEntry.context << "\n";
+    rep << "    - Steps:\n";
     for (const auto& step : currentEntry.steps) {
-        report << step << ", ";
+        rep << "      * " << step << "\n";
     }
-    report << "\n    - Confidence: " << (currentEntry.confidence * 100) << "%\n";
-    report << "    - Lessons: " << currentEntry.lessons << "\n";
+    rep << "    - Confidence: " << (currentEntry.confidence * 100) << "%\n";
+    rep << "    - Lessons: " << currentEntry.lessons << "\n";
     
-    report << "  - Identified Decision Patterns:\n";
-    for (const auto& patternPair : decisionPatterns) {
-        report << "    - " << patternPair.first << ": " << (patternPair.second * 100) << "%\n";
+    rep << "  - Identified Decision Patterns:\n";
+    for (const auto& pair : decisionPatterns) {
+        rep << "    - " << pair.first << ": " << (pair.second * 100) << "%\n";
     }
     
     if (learningScore < 6.0f) {
-        report << "  - Recommendation: Review past journal entries to identify patterns.\n";
+        rep << "  - Recommendation: Review past journal entries to identify patterns.\n";
     }
     
-    return report.str();
+    return rep.str();
 }

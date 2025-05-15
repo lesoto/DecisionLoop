@@ -3,12 +3,13 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <algorithm> 
 
 class CoreMetaValueSpecification : public DecisionComponent {
 private:
     std::vector<std::string> fundamentalValues;
     std::map<std::string, float> valueWeights;
-    float consistencyScore;
+    float consistencyScore = 0.0f;  // Initialize to 0
 
     void identifyFundamentalValues(HWND hWnd);
     void differentiateValueTypes(HWND hWnd);
@@ -28,7 +29,7 @@ private:
         float score;
     };
     std::map<std::string, Perspective> perspectives;
-    float coherenceScore;
+    float coherenceScore = 0.0f;    // Initialize to 0
 
     void applyEthicalFrameworks(HWND hWnd);
     void computeCoherenceScore();
@@ -53,7 +54,7 @@ private:
         float importance;
     };
     std::map<std::string, Horizon> horizons;
-    float balanceScore;
+    float balanceScore = 0.0f;      // Initialize to 0
 
     void mapImpacts(HWND hWnd);
     void applyTemporalDiscounting();

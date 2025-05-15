@@ -7,8 +7,8 @@
 class BiasAssumptionTesting : public DecisionComponent {
 private:
     std::vector<std::pair<std::string, std::string>> biases;
-    float detectionScore;
-    float flexibilityScore;
+    float detectionScore = 0.0f;    // Initialize to 0
+    float flexibilityScore = 0.0f;  // Initialize to 0
 
     void applyDebiasingProtocols(HWND hWnd);
     void conductPremortem(HWND hWnd);

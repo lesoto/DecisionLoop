@@ -22,7 +22,7 @@ public:
 class EmotionalCalibration : public DecisionComponent {
 private:
     std::vector<std::pair<std::string, float>> emotions;
-    float regulationScore;
+    float regulationScore = 0.0f;  // Initialize to 0
     std::string regulationStrategy;
 
     void identifyEmotions(HWND hWnd);

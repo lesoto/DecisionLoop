@@ -54,16 +54,21 @@ std::string FastLoopMode::getReport() const {
     return report.str();
 }
 
+float FastLoopMode::getScore() const {  // Definition without override
+    return score;
+}
+
 void TriageMode::applyEthicalGuardrails(HWND hWnd) {
     primaryConcern = UserInput::getStringInput(hWnd, "Enter primary concern for this urgent decision");
-    
+
     std::vector<std::string> guardrails = {
         "Do no irreversible harm",
         "Preserve dignity",
         "Honor core values"
     };
-    
-    safeguardsApplied = UserInput::getScoreInput(hWnd, "Rate adherence to guardrails (1-10)", 1.0f, 10.0f) >= 6.0f;
+
+    float safeguardScore = UserInput::getScoreInput(hWnd, "Rate adherence to guardrails (1-10)", 1.0f, 10.0f);
+    safeguardsApplied = (safeguardScore >= 6.0f);
 }
 
 void TriageMode::assessIrreversibleHarm(HWND hWnd) {
@@ -141,4 +146,9 @@ std::string GroupMode::getReport() const {
     }
     
     return report.str();
+}
+
+float GroupMode::getScore() const
+{
+    return score;
 }

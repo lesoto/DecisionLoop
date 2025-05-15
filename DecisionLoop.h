@@ -1,9 +1,5 @@
 #pragma once
-#include "CognitiveEmotionalLayer.h"
-#include "ValueEthicalLayer.h"
-#include "SystemsContextLayer.h"
-#include "ImplementationLearningLayer.h"
-#include "SpecializedModes.h"
+#include "DecisionComponent.h"
 #include <vector>
 #include <memory>
 #include <windows.h>
@@ -27,4 +23,5 @@ private:
     std::vector<std::unique_ptr<DecisionComponent>> implementationLearningComponents;
     std::vector<std::unique_ptr<DecisionComponent>> specializedModeComponents;
     float overallScore;
+    void updateOverallScore(); 
 };

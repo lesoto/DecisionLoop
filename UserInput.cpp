@@ -1,5 +1,5 @@
 #include "UserInput.h"
-#include "Resource.h"
+#include "Resource.h"  
 #include <commctrl.h>
 #include <sstream>
 #include <windows.h>

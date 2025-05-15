@@ -1,0 +1,1140 @@
+#define NOMINMAX
+#include <windows.h>
+
+#include "CognitiveEmotionalLayer.h"
+#include "UserInput.h"
+#include <fstream>
+#include <vector>
+#include <numeric>
+#include <ctime>
+#include <sstream>
+
+void CognitiveReadiness::conductSelfAssessment(HWND hWnd) {
+    float fatigue = UserInput::getScoreInput(hWnd, "Rate your fatigue level (1 = none, 10 = exhausted)", 1.0f, 10.0f);
+    float distractions = UserInput::getScoreInput(hWnd, "Rate your distraction level (1 = none, 10 = high)", 1.0f, 10.0f);
+    float focus = UserInput::getScoreInput(hWnd, "Rate your focus level (1 = low, 10 = high)", 1.0f, 10.0f);
+    
+    readinessScore = (focus * 0.5f + (10 - fatigue) * 0.3f + (10 - distractions) * 0.2f);
+    
+    std::ofstream out("cognitive_trends.txt", std::ios::app);
+    out << time(nullptr) << "," << readinessScore << "\n";
+    out.close();
+}
+
+void CognitiveReadiness::determineCognitiveMode() {
+    cognitiveMode = readinessScore > 7.0f ? "Analytical" :
+                    readinessScore > 4.0f ? "Balanced" : "Intuitive";
+}
+
+void CognitiveReadiness::applyReadinessTechniques(HWND hWnd) {
+    if (readinessScore < 5.0f) {
+        std::vector<std::string> techniques = {"Mindfulness exercise", "Physical movement", "Grounding exercise"};
+        std::string technique = UserInput::selectFromList(hWnd, "Select a readiness technique", techniques);
+        readinessTechniques.push_back(technique);
+        readinessScore = std::min(10.0f, readinessScore + 2.0f);
+    }
+}
+
+void CognitiveReadiness::execute(HWND hWnd) {
+    conductSelfAssessment(hWnd);
+    determineCognitiveMode();
+    applyReadinessTechniques(hWnd);
+    
+    std::ifstream in("cognitive_trends.txt");
+    std::vector<float> scores;
+    std::string line;
+    while (std::getline(in, line)) {
+        size_t pos = line.find(",");
+        if (pos != std::string::npos) {
+            scores.push_back(std::stof(line.substr(pos + 1)));
+        }
+    }
+    in.close();
+    
+    if (scores.size() >= 5) {
+        float avg = std::accumulate(scores.begin(), scores.end(), 0.0f) / scores.size();
+        if (avg < 4.0f) {
+            MessageBoxA(hWnd, "Trend indicates potential burnout risk.", "Warning", MB_OK | MB_ICONWARNING);
+        }
+    }
+}
+
+std::string CognitiveReadiness::getReport() const {
+    std::stringstream report;
+    report << "Cognitive Readiness Report:\n";
+    report << "  - Readiness Score: " << readinessScore << "/10\n";
+    report << "  - Dominant Cognitive Mode: " << cognitiveMode << "\n";
+    report << "  - Applied Techniques: ";
+    for (const auto& tech : readinessTechniques) {
+        report << tech << ", ";
+    }
+    if (readinessScore < 5.0f) {
+        report << "\n  - Recommendation: Practice regular mindfulness to improve readiness.";
+    }
+    return report.str();
+}
+
+void EmotionalCalibration::identifyEmotions(HWND hWnd) {
+    const std::vector<std::string> emotionList = {
+        "Anxiety", "Excitement", "Frustration", "Contentment",
+        "Overwhelm", "Confidence", "Anger", "Sadness", "Joy"
+    };
+    
+    for (int i = 0; i < 3; ++i) {
+        std::stringstream prompt;
+        prompt << "Select emotion " << (i + 1);
+        std::string emotion = UserInput::selectFromList(hWnd, prompt.str(), emotionList);
+        prompt.str("");
+        prompt << "Rate intensity of " << emotion;
+        float intensity = UserInput::getScoreInput(hWnd, prompt.str(), 1.0f, 10.0f);
+        emotions.emplace_back(emotion, intensity);
+    }
+}
+
+void EmotionalCalibration::evaluateProportionality() {
+    float totalIntensity = 0.0f;
+    for (const auto& emotionPair : emotions) {
+        totalIntensity += emotionPair.second;
+    }
+    
+    float avgIntensity = emotions.empty() ? 0.0f : totalIntensity / emotions.size();
+    regulationScore = 10.0f - std::min(10.0f, avgIntensity * 0.75f);
+}
+
+void EmotionalCalibration::applyRegulationStrategy(HWND hWnd) {
+    std::vector<std::string> strategies = {"4-7-8 breathing", "Cognitive reappraisal", "Physical movement"};
+    if (regulationScore < 6.0f) {
+        regulationStrategy = UserInput::selectFromList(hWnd, "Select an emotional regulation strategy", strategies);
+        regulationScore = std::min(10.0f, regulationScore + 3.0f);
+    } else {
+        regulationStrategy = "Maintain current state";
+    }
+}
+
+void EmotionalCalibration::execute(HWND hWnd) {
+    identifyEmotions(hWnd);
+    evaluateProportionality();
+    applyRegulationStrategy(hWnd);
+}
+
+std::string EmotionalCalibration::getReport() const {
+    std::stringstream report;
+    report << "Emotional Calibration Report:\n";
+    report << "  - Regulation Score: " << regulationScore << "/10\n";
+    report << "  - Detected Emotions:\n";
+    for (const auto& emotionPair : emotions) {
+        report << "    - " << emotionPair.first << ": " << emotionPair.second << "/10\n";
+    }
+    report << "  - Applied Regulation: " << regulationStrategy << "\n";
+    if (regulationScore < 5.0f) {
+        report << "  - Recommendation: Practice daily emotional check-ins.\n";
+    }
+    return report.str();
+}
+
+void ImpulseAlignment::simulateImpulses(HWND hWnd) {
+    impulses = { UserInput::getStringInput(hWnd, "Enter primary impulse influencing your decision") };
+}
+
+void ImpulseAlignment::evaluateAlignment(HWND hWnd) {
+    alignmentScore = UserInput::getScoreInput(hWnd, "Rate how well impulses align with your goals (1-10)", 1.0f, 10.0f);
+}
+
+void ImpulseAlignment::applyCBT_ACT_Tools(HWND hWnd) {
+    if (alignmentScore < 6.0f) {
+        std::vector<std::string> tools = {"Pause and reflect", "Reframe impulse", "Choose alternative action"};
+        std::string tool = UserInput::selectFromList(hWnd, "Select a CBT/ACT tool to align impulses", tools);
+        alignmentScore = std::min(10.0f, alignmentScore + 2.0f);
+        impulses.push_back("Applied: " + tool);
+    }
+}
+
+void ImpulseAlignment::execute(HWND hWnd) {
+    simulateImpulses(hWnd);
+    evaluateAlignment(hWnd);
+    applyCBT_ACT_Tools(hWnd);
+}
+
+std::string ImpulseAlignment::getReport() const {
+    std::stringstream report;
+    report << "Impulse Alignment Report:\n";
+    report << "  - Alignment Score: " << alignmentScore << "/10\n";
+    report << "  - Impulses:\n";
+    for (const auto& impulse : impulses) {
+        report << "    - " << impulse << "\n";
+    }
+    if (alignmentScore < 6.0f) {
+        report << "  - Recommendation: Use CBT/ACT tools regularly to align impulses.\n";
+    }
+    return report.str();
+}
+#include "DecisionLoop.h"
+#include <numeric>
+
+DecisionLoop::DecisionLoop() : overallScore(0.0f) {
+    cognitiveEmotionalComponents.push_back(std::make_unique<CognitiveReadiness>());
+    cognitiveEmotionalComponents.push_back(std::make_unique<EmotionalCalibration>());
+    cognitiveEmotionalComponents.push_back(std::make_unique<ImpulseAlignment>());
+    
+    valueEthicalComponents.push_back(std::make_unique<CoreMetaValueSpecification>());
+    valueEthicalComponents.push_back(std::make_unique<EthicalCoherence>());
+    valueEthicalComponents.push_back(std::make_unique<TimeHorizonIntegration>());
+    
+    systemsContextComponents.push_back(std::make_unique<BiasAssumptionTesting>());
+    systemsContextComponents.push_back(std::make_unique<UncertaintyComplexityManagement>());
+    systemsContextComponents.push_back(std::make_unique<InternalRoleDialogue>());
+    systemsContextComponents.push_back(std::make_unique<SocialEcologicalAnalysis>());
+    
+    implementationLearningComponents.push_back(std::make_unique<FeedbackLearningIntegration>());
+    
+    specializedModeComponents.push_back(std::make_unique<FastLoopMode>());
+    specializedModeComponents.push_back(std::make_unique<TriageMode>());
+    specializedModeComponents.push_back(std::make_unique<GroupMode>());
+}
+
+DecisionLoop::~DecisionLoop() {}
+
+void DecisionLoop::runFullLoop(HWND hDlg) {
+    for (auto& component : cognitiveEmotionalComponents) component->execute(hDlg);
+    for (auto& component : valueEthicalComponents) component->execute(hDlg);
+    for (auto& component : systemsContextComponents) component->execute(hDlg);
+    for (auto& component : implementationLearningComponents) component->execute(hDlg);
+}
+
+void DecisionLoop::runFastLoop(HWND hDlg) {
+    specializedModeComponents[0]->execute(hDlg);
+}
+
+void DecisionLoop::runTriageMode(HWND hDlg) {
+    specializedModeComponents[1]->execute(hDlg);
+}
+
+void DecisionLoop::runGroupMode(HWND hDlg) {
+    specializedModeComponents[2]->execute(hDlg);
+}
+
+float DecisionLoop::getOverallScore() {
+    return overallScore;
+}
+
+std::string DecisionLoop::generateFullReport() {
+    return "Full Report";
+}
+#define NOMINMAX
+#include <windows.h>
+
+#include "ImplementationLearningLayer.h"
+#include "UserInput.h"
+#include "json.hpp"
+#include <fstream>
+#include <ctime>
+#include <sstream>
+
+using json = nlohmann::json;
+
+void FeedbackLearningIntegration::createDecisionJournal(HWND hWnd) {
+    currentEntry.context = UserInput::getStringInput(hWnd, "Enter decision context");
+    currentEntry.steps = {
+        UserInput::getStringInput(hWnd, "Step 1 taken"),
+        UserInput::getStringInput(hWnd, "Step 2 taken"),
+        UserInput::getStringInput(hWnd, "Step 3 taken")
+    };
+    currentEntry.confidence = UserInput::getScoreInput(hWnd, "Rate your confidence (1-10)", 1.0f, 10.0f) / 10.0f;
+    currentEntry.lessons = UserInput::getStringInput(hWnd, "Enter lessons learned");
+    
+    learningScore = 8.0f + (currentEntry.confidence * 2.0f);
+    
+    json entry = {
+        {"context", currentEntry.context},
+        {"steps", currentEntry.steps},
+        {"confidence", currentEntry.confidence},
+        {"lessons", currentEntry.lessons},
+        {"timestamp", time(nullptr)}
+    };
+    
+    std::ifstream in("decision_journal.json");
+    json journal;
+    if (in.is_open()) {
+        in >> journal;
+        in.close();
+    }
+    journal["entries"].push_back(entry);
+    
+    std::ofstream out("decision_journal.json");
+    out << journal.dump(4);
+    out.close();
+}
+
+void FeedbackLearningIntegration::conductDecisionAutopsy(HWND hWnd) {
+    float expectedOutcome = UserInput::getScoreInput(hWnd, "Rate expected outcome (1-10)", 1.0f, 10.0f);
+    float actualOutcome = UserInput::getScoreInput(hWnd, "Rate actual outcome (1-10)", 1.0f, 10.0f);
+    learningScore = std::min(10.0f, learningScore + (actualOutcome - expectedOutcome) / 2.0f);
+}
+
+void FeedbackLearningIntegration::updatePersonalDecisionModel(HWND hWnd) {
+    std::vector<std::string> patterns = {
+        "Overweight short-term", "Underestimate complexity",
+        "Strong ethical coherence", "Good stakeholder consideration"
+    };
+    
+    for (const auto& pattern : patterns) {
+        std::stringstream prompt;
+        prompt << "Rate pattern: " << pattern << " (1-10)";
+        float strength = UserInput::getScoreInput(hWnd, prompt.str(), 1.0f, 10.0f) / 10.0f;
+        decisionPatterns[pattern] = strength;
+    }
+    
+    pdmScore = std::accumulate(decisionPatterns.begin(), decisionPatterns.end(), 0.0f,
+        [](float sum, const auto& p) { return sum + p.second; }) / decisionPatterns.size() * 10.0f;
+}
+
+void FeedbackLearningIntegration::execute(HWND hWnd) {
+    createDecisionJournal(hWnd);
+    conductDecisionAutopsy(hWnd);
+    updatePersonalDecisionModel(hWnd);
+}
+
+std::string FeedbackLearningIntegration::getReport() const {
+    std::stringstream report;
+    report << "Feedback & Learning Report:\n";
+    report << "  - Learning Integration Score: " << learningScore << "/10\n";
+    report << "  - PDM Evolution Score: " << pdmScore << "/10\n";
+    
+    report << "  - Decision Journal Entry:\n";
+    report << "    - Context: " << currentEntry.context << "\n";
+    report << "    - Steps: ";
+    for (const auto& step : currentEntry.steps) {
+        report << step << ", ";
+    }
+    report << "\n    - Confidence: " << (currentEntry.confidence * 100) << "%\n";
+    report << "    - Lessons: " << currentEntry.lessons << "\n";
+    
+    report << "  - Identified Decision Patterns:\n";
+    for (const auto& patternPair : decisionPatterns) {
+        report << "    - " << patternPair.first << ": " << (patternPair.second * 100) << "%\n";
+    }
+    
+    if (learningScore < 6.0f) {
+        report << "  - Recommendation: Review past journal entries to identify patterns.\n";
+    }
+    
+    return report.str();
+}
+#include "framework.h"
+#include "DecisionLoop.h"
+#include "Resource.h"
+#include <windows.h>
+#include <commctrl.h>
+#include <string>
+#include <sstream>
+
+INT_PTR CALLBACK MainDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+std::wstring StringToWString(const std::string& str);
+
+DecisionLoop* g_decisionLoop = nullptr;
+
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
+    _In_opt_ HINSTANCE hPrevInstance,
+    _In_ LPWSTR    lpCmdLine,
+    _In_ int       nCmdShow)
+{
+    // Initialize common controls
+    INITCOMMONCONTROLSEX icex;
+    icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+    icex.dwICC = ICC_STANDARD_CLASSES | ICC_WIN95_CLASSES;
+    InitCommonControlsEx(&icex);
+
+    g_decisionLoop = new DecisionLoop();
+
+    DialogBox(hInstance, MAKEINTRESOURCE(IDD_MAIN_DIALOG), nullptr, MainDlgProc);
+
+    delete g_decisionLoop;
+    g_decisionLoop = nullptr;
+
+    return 0;
+}
+
+INT_PTR CALLBACK MainDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    UNREFERENCED_PARAMETER(lParam);
+    static HWND hComboMode;
+    static HWND hEditReport;
+
+    switch (message)
+    {
+    case WM_INITDIALOG:
+        {
+            hComboMode = GetDlgItem(hDlg, IDC_COMBO_MODE);
+            hEditReport = GetDlgItem(hDlg, IDC_EDIT_REPORT);
+
+            SendMessage(hComboMode, CB_ADDSTRING, 0, (LPARAM)L"Full Loop");
+            SendMessage(hComboMode, CB_ADDSTRING, 0, (LPARAM)L"Fast Loop");
+            SendMessage(hComboMode, CB_ADDSTRING, 0, (LPARAM)L"Triage Mode");
+            SendMessage(hComboMode, CB_ADDSTRING, 0, (LPARAM)L"Group Mode");
+            SendMessage(hComboMode, CB_SETCURSEL, 0, 0);
+
+            HICON hIcon = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_DECISIONLOOP));
+            SendMessage(hDlg, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+            SendMessage(hDlg, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+            DestroyIcon(hIcon);
+        }
+        return (INT_PTR)TRUE;
+
+    case WM_COMMAND:
+        switch (LOWORD(wParam))
+        {
+        case IDC_BUTTON_RUN:
+            {
+                int sel = (int)SendMessage(hComboMode, CB_GETCURSEL, 0, 0);
+                if (sel == CB_ERR) {
+                    MessageBox(hDlg, L"Please select a decision mode.", L"Error", MB_OK | MB_ICONERROR);
+                    break;
+                }
+
+                // Pass hDlg (HWND) directly
+                if (sel == 0) g_decisionLoop->runFullLoop(hDlg);
+                else if (sel == 1) g_decisionLoop->runFastLoop(hDlg);
+                else if (sel == 2) g_decisionLoop->runTriageMode(hDlg);
+                else g_decisionLoop->runGroupMode(hDlg);
+
+                std::stringstream report;
+                report << "Overall Decision Quality Score: " << g_decisionLoop->getOverallScore() << "/10\n\n";
+                report << g_decisionLoop->generateFullReport();
+                std::wstring wReport = StringToWString(report.str());
+                SetWindowText(hEditReport, wReport.c_str());
+            }
+            break;
+
+        case IDCANCEL:
+            EndDialog(hDlg, LOWORD(wParam));
+            return (INT_PTR)TRUE;
+        }
+        break;
+
+    case WM_CLOSE:
+        EndDialog(hDlg, 0);
+        return (INT_PTR)TRUE;
+    }
+    return (INT_PTR)FALSE;
+}
+
+std::wstring StringToWString(const std::string& str)
+{
+    int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+    std::wstring wstrTo(size_needed, 0);
+    MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
+    return wstrTo;
+}
+#define NOMINMAX
+#include <windows.h>
+
+#include "SpecializedModes.h"
+#include "CognitiveEmotionalLayer.h"
+#include "ValueEthicalLayer.h"
+#include "SystemsContextLayer.h"
+#include "UserInput.h"
+#include <sstream>
+
+void FastLoopMode::runEssentialChecks(HWND hWnd) {
+    EmotionalCalibration emotionalCheck;
+    CoreMetaValueSpecification valueCheck;
+    EthicalCoherence ethicalCheck;
+    BiasAssumptionTesting biasCheck;
+    
+    emotionalCheck.execute(hWnd);
+    valueCheck.execute(hWnd);
+    ethicalCheck.execute(hWnd);
+    biasCheck.execute(hWnd);
+    
+    std::stringstream ss;
+    ss << "Emotional check: " << emotionalCheck.getScore() << "/10";
+    stepsTaken.push_back(ss.str());
+    ss.str("");
+    ss << "Core values: " << valueCheck.getScore() << "/10";
+    stepsTaken.push_back(ss.str());
+    ss.str("");
+    ss << "Ethical lens: " << ethicalCheck.getScore() << "/10";
+    stepsTaken.push_back(ss.str());
+    ss.str("");
+    ss << "Bias check: " << biasCheck.getScore() << "/10";
+    stepsTaken.push_back(ss.str());
+    
+    score = (emotionalCheck.getScore() + valueCheck.getScore() +
+             ethicalCheck.getScore() + biasCheck.getScore()) / 4.0f;
+}
+
+void FastLoopMode::execute(HWND hWnd) {
+    runEssentialChecks(hWnd);
+}
+
+std::string FastLoopMode::getReport() const {
+    std::stringstream report;
+    report << "Fast Loop Mode Report:\n";
+    report << "  - Decision Quality Score: " << score << "/10\n";
+    report << "  - Steps Taken:\n";
+    for (const auto& step : stepsTaken) {
+        report << "    - " << step << "\n";
+    }
+    if (score < 6.0f) {
+        report << "  - Recommendation: Consider full loop for complex decisions.\n";
+    }
+    return report.str();
+}
+
+void TriageMode::applyEthicalGuardrails(HWND hWnd) {
+    primaryConcern = UserInput::getStringInput(hWnd, "Enter primary concern for this urgent decision");
+    
+    std::vector<std::string> guardrails = {
+        "Do no irreversible harm",
+        "Preserve dignity",
+        "Honor core values"
+    };
+    
+    safeguardsApplied = UserInput::getScoreInput(hWnd, "Rate adherence to guardrails (1-10)", 1.0f, 10.0f) >= 6.0f;
+}
+
+void TriageMode::assessIrreversibleHarm(HWND hWnd) {
+    std::string harmAssessment = UserInput::getStringInput(hWnd, "Describe potential irreversible harms");
+    if (harmAssessment.empty()) {
+        primaryConcern += "\nNo irreversible harm detected";
+    } else {
+        primaryConcern += "\nPotential irreversible impacts: " + harmAssessment;
+    }
+}
+
+void TriageMode::execute(HWND hWnd) {
+    applyEthicalGuardrails(hWnd);
+    assessIrreversibleHarm(hWnd);
+}
+
+std::string TriageMode::getReport() const {
+    std::stringstream report;
+    report << "Triage Mode Report:\n";
+    report << "  - Safeguards Applied: " << (safeguardsApplied ? "Yes" : "No") << "\n";
+    report << "  - Primary Concern: " << primaryConcern << "\n";
+    report << "  - Post-Action Review Required: Yes\n";
+    if (!safeguardsApplied) {
+        report << "  - Recommendation: Conduct immediate review to ensure ethical alignment.\n";
+    }
+    return report.str();
+}
+
+void GroupMode::mapDiversePerspectives(HWND hWnd) {
+    for (int i = 0; i < 4; ++i) {
+        std::stringstream prompt;
+        prompt << "Enter stakeholder perspective " << (i + 1);
+        std::string view = UserInput::getStringInput(hWnd, prompt.str());
+        if (!view.empty()) {
+            stakeholderViews.push_back(view);
+        }
+    }
+    
+    std::string dissent = UserInput::getStringInput(hWnd, "Enter any dissenting opinions (or leave blank)");
+    if (!dissent.empty()) {
+        dissentingOpinions.push_back(dissent);
+    }
+}
+
+void GroupMode::buildConsensus(HWND hWnd) {
+    consensusScore = UserInput::getScoreInput(hWnd, "Rate consensus among stakeholders (1-10)");
+    if (!dissentingOpinions.empty()) {
+        consensusScore = std::max(0.0f, consensusScore - 1.5f);
+    }
+}
+
+void GroupMode::execute(HWND hWnd) {
+    mapDiversePerspectives(hWnd);
+    buildConsensus(hWnd);
+}
+
+std::string GroupMode::getReport() const {
+    std::stringstream report;
+    report << "Group Decision Report:\n";
+    report << "  - Consensus Score: " << consensusScore << "/10\n";
+    report << "  - Stakeholder Views:\n";
+    for (const auto& view : stakeholderViews) {
+        report << "    - " << view << "\n";
+    }
+    
+    if (!dissentingOpinions.empty()) {
+        report << "  - Dissenting Opinions:\n";
+        for (const auto& dissent : dissentingOpinions) {
+            report << "    - " << dissent << "\n";
+        }
+    }
+    
+    if (consensusScore < 6.0f) {
+        report << "  - Recommendation: Facilitate further discussion to address dissent.\n";
+    }
+    
+    return report.str();
+}
+#define NOMINMAX
+#include <windows.h>
+
+
+#include "SystemsContextLayer.h"
+#include "UserInput.h"
+#include <algorithm>
+#include <sstream>
+
+void BiasAssumptionTesting::applyDebiasingProtocols(HWND hWnd) {
+    const std::vector<std::string> biasTypes = {
+        "Confirmation", "Sunk Cost", "Overconfidence",
+        "Anchoring", "Availability", "Blind Spot"
+    };
+    
+    for (int i = 0; i < 3; ++i) {
+        std::stringstream prompt;
+        prompt << "Select bias " << (i + 1);
+        std::string bias = UserInput::selectFromList(hWnd, prompt.str(), biasTypes);
+        prompt.str("");
+        prompt << "Enter evidence for " << bias << " bias";
+        std::string evidence = UserInput::getStringInput(hWnd, prompt.str());
+        biases.emplace_back(bias, evidence);
+    }
+    
+    detectionScore = UserInput::getScoreInput(hWnd, "Rate effectiveness of bias detection (1-10)");
+}
+
+void BiasAssumptionTesting::conductPremortem(HWND hWnd) {
+    std::string failureScenario = UserInput::getStringInput(hWnd, "Imagine the decision failed. Describe why");
+    flexibilityScore = UserInput::getScoreInput(hWnd, "Rate your openness to changing your mind (1-10)");
+}
+
+void BiasAssumptionTesting::applyBayesianUpdating(HWND hWnd) {
+    std::string newEvidence = UserInput::getStringInput(hWnd, "What new evidence would change your decision?");
+    if (!newEvidence.empty()) {
+        detectionScore = std::min(10.0f, detectionScore + 2.0f);
+    }
+}
+
+void BiasAssumptionTesting::execute(HWND hWnd) {
+    applyDebiasingProtocols(hWnd);
+    conductPremortem(hWnd);
+    applyBayesianUpdating(hWnd);
+}
+
+std::string BiasAssumptionTesting::getReport() const {
+    std::stringstream report;
+    report << "Bias and Assumption Testing Report:\n";
+    report << "  - Bias Detection Score: " << detectionScore << "/10\n";
+    report << "  - Belief Flexibility Score: " << flexibilityScore << "/10\n";
+    report << "  - Identified Biases:\n";
+    for (const auto& biasPair : biases) {
+        report << "    - " << biasPair.first << " Bias: " << biasPair.second << "\n";
+    }
+    if (detectionScore < 6.0f) {
+        report << "  - Recommendation: Conduct regular bias checks to improve accuracy.\n";
+    }
+    return report.str();
+}
+
+void UncertaintyComplexityManagement::assessRiskVsUncertainty(HWND hWnd) {
+    float riskScore = UserInput::getScoreInput(hWnd, "Rate quantifiable risks (1-10)");
+    float uncertaintyScore = UserInput::getScoreInput(hWnd, "Rate non-quantifiable uncertainties (1-10)");
+    adaptationScore = (riskScore + uncertaintyScore) / 2.0f;
+}
+
+void UncertaintyComplexityManagement::applyScenarioPlanning(HWND hWnd) {
+    for (int i = 0; i < 3; ++i) {
+        std::stringstream prompt;
+        prompt << "Enter scenario " << (i + 1);
+        scenarios.push_back(UserInput::getStringInput(hWnd, prompt.str()));
+    }
+    navigationScore = UserInput::getScoreInput(hWnd, "Rate confidence in navigating these scenarios (1-10)");
+}
+
+void UncertaintyComplexityManagement::determineCynefinCategory(HWND hWnd) {
+    std::vector<std::string> categories = {"Simple", "Complicated", "Complex", "Chaotic"};
+    cynefinCategory = UserInput::selectFromList(hWnd, "Select Cynefin category for this decision", categories);
+}
+
+void UncertaintyComplexityManagement::execute(HWND hWnd) {
+    assessRiskVsUncertainty(hWnd);
+    applyScenarioPlanning(hWnd);
+    determineCynefinCategory(hWnd);
+}
+
+std::string UncertaintyComplexityManagement::getReport() const {
+    std::stringstream report;
+    report << "Uncertainty Management Report:\n";
+    report << "  - Uncertainty Adaptation Score: " << adaptationScore << "/10\n";
+    report << "  - Complexity Navigation Score: " << navigationScore << "/10\n";
+    report << "  - Cynefin Framework Category: " << cynefinCategory << "\n";
+    report << "  - Scenarios Developed:\n";
+    for (const auto& scenario : scenarios) {
+        report << "    - " << scenario << "\n";
+    }
+    if (navigationScore < 6.0f) {
+        report << "  - Recommendation: Develop more detailed scenarios for complex decisions.\n";
+    }
+    return report.str();
+}
+
+void InternalRoleDialogue::identifyInternalRoles(HWND hWnd) {
+    std::vector<std::string> roleList = {
+        "Protector", "Visionary", "Skeptic", "Future Self", "Inner Child", "Shadow"
+    };
+    
+    for (int i = 0; i < 4; ++i) {
+        std::stringstream prompt;
+        prompt << "Select role " << (i + 1);
+        std::string role = UserInput::selectFromList(hWnd, prompt.str(), roleList);
+        prompt.str("");
+        prompt << "Enter perspective for " << role;
+        std::string perspective = UserInput::getStringInput(hWnd, prompt.str());
+        prompt.str("");
+        prompt << "Rate influence of " << role << " (1-10)";
+        float influence = UserInput::getScoreInput(hWnd, prompt.str()) / 10.0f;
+        roles[role] = {perspective, influence};
+    }
+}
+
+void InternalRoleDialogue::conductDialogue(HWND hWnd) {
+    std::string dialogue = UserInput::getStringInput(hWnd, "Summarize the dialogue between roles");
+    coherenceScore = UserInput::getScoreInput(hWnd, "Rate coherence of internal dialogue (1-10)");
+}
+
+void InternalRoleDialogue::resolveConflicts(HWND hWnd) {
+    std::string conflict = UserInput::getStringInput(hWnd, "Describe any conflicts between roles");
+    if (conflict.empty()) {
+        resolutionScore = coherenceScore;
+    } else {
+        resolutionScore = UserInput::getScoreInput(hWnd, "Rate conflict resolution effectiveness (1-10)");
+    }
+}
+
+void InternalRoleDialogue::execute(HWND hWnd) {
+    identifyInternalRoles(hWnd);
+    conductDialogue(hWnd);
+    resolveConflicts(hWnd);
+}
+
+std::string InternalRoleDialogue::getReport() const {
+    std::stringstream report;
+    report << "Internal Role Dialogue Report:\n";
+    report << "  - Role Coherence Score: " << coherenceScore << "/10\n";
+    report << "  - Conflict Resolution Score: " << resolutionScore << "/10\n";
+    report << "  - Internal Roles and Perspectives:\n";
+    for (const auto& rolePair : roles) {
+        report << "    - " << rolePair.first << " (" << (rolePair.second.influence * 100) << "% influence)\n";
+        report << "      Perspective: " << rolePair.second.perspective << "\n";
+    }
+    if (resolutionScore < 6.0f) {
+        report << "  - Recommendation: Use IFS techniques to resolve internal conflicts.\n";
+    }
+    return report.str();
+}
+
+void SocialEcologicalAnalysis::assessRelationships(HWND hWnd) {
+    for (int i = 0; i < 3; ++i) {
+        std::stringstream prompt;
+        prompt << "Enter relationship " << (i + 1);
+        std::string rel = UserInput::getStringInput(hWnd, prompt.str());
+        if (!rel.empty()) {
+            affectedRelationships.push_back(rel);
+        }
+    }
+    fitScore = UserInput::getScoreInput(hWnd, "Rate fit with relationships (1-10)");
+}
+
+void SocialEcologicalAnalysis::analyzePowerDynamics(HWND hWnd) {
+    for (int i = 0; i < 3; ++i) {
+        std::stringstream prompt;
+        prompt << "Enter power dynamic " << (i + 1);
+        std::string dyn = UserInput::getStringInput(hWnd, prompt.str());
+        if (!dyn.empty()) {
+            powerDynamics.push_back(dyn);
+        }
+    }
+}
+
+void SocialEcologicalAnalysis::evaluateEnvironmentalImpact(HWND hWnd) {
+    for (int i = 0; i < 3; ++i) {
+        std::stringstream prompt;
+        prompt << "Enter environmental factor " << (i + 1);
+        std::string env = UserInput::getStringInput(hWnd, prompt.str());
+        if (!env.empty()) {
+            environmentalFactors.push_back(env);
+        }
+    }
+    impactScore = UserInput::getScoreInput(hWnd, "Rate environmental impact alignment (1-10)");
+}
+
+void SocialEcologicalAnalysis::execute(HWND hWnd) {
+    assessRelationships(hWnd);
+    analyzePowerDynamics(hWnd);
+    evaluateEnvironmentalImpact(hWnd);
+}
+
+std::string SocialEcologicalAnalysis::getReport() const {
+    std::stringstream report;
+    report << "Social-Ecological Analysis Report:\n";
+    report << "  - Contextual Fit Score: " << fitScore << "/10\n";
+    report << "  - Stakeholder Impact Score: " << impactScore << "/10\n";
+    
+    report << "  - Affected Relationships:\n";
+    for (const auto& rel : affectedRelationships) {
+        report << "    - " << rel << "\n";
+    }
+    
+    report << "  - Power Dynamics:\n";
+    for (const auto& dyn : powerDynamics) {
+        report << "    - " << dyn << "\n";
+    }
+    
+    report << "  - Environmental Factors:\n";
+    for (const auto& env : environmentalFactors) {
+        report << "    - " << env << "\n";
+    }
+    
+    if (fitScore < 6.0f || impactScore < 6.0f) {
+        report << "  - Recommendation: Reassess social and ecological impacts.\n";
+    }
+    
+    return report.str();
+}
+#include "UserInput.h"
+#include "Resource.h"
+#include <commctrl.h>
+#include <sstream>
+#include <windows.h>
+#include <string>
+
+// Helper functions for string conversions
+std::wstring to_wstring(const std::string& str) {
+    if (str.empty()) return L"";
+    int len = MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, nullptr, 0);
+    std::wstring wstr(len - 1, 0);
+    MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, &wstr[0], len);
+    return wstr;
+}
+
+std::string to_string(const std::wstring& wstr) {
+    if (wstr.empty()) return "";
+    int len = WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
+    std::string str(len - 1, 0);
+    WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), -1, &str[0], len, nullptr, nullptr);
+    return str;
+}
+
+// Implementation of static methods
+float UserInput::getScoreInput(HWND hWndParent, const std::string& prompt, float min, float max)
+{
+    InputDlgData data = { prompt, new std::string(), min, max, true };
+    if (DialogBoxParam(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDD_INPUT_DIALOG), hWndParent, InputDlgProc, (LPARAM)&data) == IDOK)
+    {
+        try {
+            float value = std::stof(*data.result);
+            if (value >= min && value <= max) {
+                delete data.result;
+                return value;
+            }
+        }
+        catch (...) {}
+    }
+    delete data.result;
+    return min;
+}
+
+std::string UserInput::getStringInput(HWND hWndParent, const std::string& prompt)
+{
+    InputDlgData data = { prompt, new std::string(), 0.0f, 0.0f, false };
+    if (DialogBoxParam(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDD_INPUT_DIALOG), hWndParent, InputDlgProc, (LPARAM)&data) == IDOK)
+    {
+        std::string result = *data.result;
+        delete data.result;
+        return result;
+    }
+    delete data.result;
+    return "";
+}
+
+std::string UserInput::selectFromList(HWND hWndParent, const std::string& prompt, const std::vector<std::string>& options)
+{
+    ListDlgData data = { prompt, options, new std::string() };
+    if (DialogBoxParam(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDD_LIST_DIALOG), hWndParent, ListDlgProc, (LPARAM)&data) == IDOK)
+    {
+        std::string result = *data.result;
+        delete data.result;
+        return result;
+    }
+    delete data.result;
+    return options.empty() ? "" : options[0];
+}
+
+// Dialog procedures remain unchanged
+INT_PTR CALLBACK UserInput::InputDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    static InputDlgData* data;
+    switch (message)
+    {
+    case WM_INITDIALOG:
+        data = (InputDlgData*)lParam;
+        SetWindowTextW(hDlg, L"Input");
+        SetDlgItemTextW(hDlg, IDC_EDIT_PROMPT, to_wstring(data->prompt).c_str());
+        if (data->isScore)
+        {
+            std::stringstream ss;
+            ss << "Enter a value between " << data->min << " and " << data->max;
+            SetDlgItemTextW(hDlg, IDC_STATIC_INSTRUCTION, to_wstring(ss.str()).c_str());
+        }
+        return (INT_PTR)TRUE;
+
+    case WM_COMMAND:
+        switch (LOWORD(wParam))
+        {
+        case IDOK:
+            {
+                const int BUFSIZE = 256;
+                WCHAR wbuffer[BUFSIZE];
+                int copied = GetDlgItemTextW(hDlg, IDC_EDIT_INPUT, wbuffer, BUFSIZE);
+                if (copied > 0)
+                {
+                    *data->result = to_string(std::wstring(wbuffer, copied));
+                }
+                EndDialog(hDlg, IDOK);
+            }
+            break;
+        case IDCANCEL:
+            EndDialog(hDlg, IDCANCEL);
+            break;
+        }
+        break;
+
+    case WM_CLOSE:
+        EndDialog(hDlg, IDCANCEL);
+        break;
+    }
+    return (INT_PTR)FALSE;
+}
+
+INT_PTR CALLBACK UserInput::ListDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    static ListDlgData* data;
+    switch (message)
+    {
+    case WM_INITDIALOG:
+        data = (ListDlgData*)lParam;
+        SetWindowTextW(hDlg, L"Select Option");
+        SetDlgItemTextW(hDlg, IDC_EDIT_PROMPT, to_wstring(data->prompt).c_str());
+        {
+            HWND hList = GetDlgItem(hDlg, IDC_LIST_OPTIONS);
+            for (const auto& option : data->options)
+            {
+                SendMessageW(hList, LB_ADDSTRING, 0, (LPARAM)to_wstring(option).c_str());
+            }
+            SendMessageW(hList, LB_SETCURSEL, 0, 0);
+        }
+        return (INT_PTR)TRUE;
+
+    case WM_COMMAND:
+        switch (LOWORD(wParam))
+        {
+        case IDOK:
+            {
+                HWND hList = GetDlgItem(hDlg, IDC_LIST_OPTIONS);
+                int sel = (int)SendMessageW(hList, LB_GETCURSEL, 0, 0);
+                if (sel != LB_ERR && sel < (int)data->options.size())
+                {
+                    *data->result = data->options[sel];
+                }
+                EndDialog(hDlg, IDOK);
+            }
+            break;
+        case IDCANCEL:
+            EndDialog(hDlg, IDCANCEL);
+            break;
+        }
+        break;
+
+    case WM_CLOSE:
+        EndDialog(hDlg, IDCANCEL);
+        break;
+    }
+    return (INT_PTR)FALSE;
+}
+#define NOMINMAX
+#include <windows.h>
+
+#include "ValueEthicalLayer.h"
+#include "UserInput.h"
+#include <algorithm>
+#include <numeric>
+#include <sstream>
+
+void CoreMetaValueSpecification::identifyFundamentalValues(HWND hWnd) {
+    const std::vector<std::string> valueList = {
+        "Integrity", "Growth", "Connection", "Security", "Creativity",
+        "Service", "Autonomy", "Achievement", "Balance", "Justice"
+    };
+    
+    for (int i = 0; i < 4; ++i) {
+        std::stringstream prompt;
+        prompt << "Select value " << (i + 1);
+        std::string value = UserInput::selectFromList(hWnd, prompt.str(), valueList);
+        if (std::find(fundamentalValues.begin(), fundamentalValues.end(), value) == fundamentalValues.end()) {
+            fundamentalValues.push_back(value);
+        }
+    }
+}
+
+void CoreMetaValueSpecification::differentiateValueTypes(HWND hWnd) {
+    std::vector<std::string> types = {"Inherited", "Current", "Aspirational"};
+    for (const auto& value : fundamentalValues) {
+        std::stringstream prompt;
+        prompt << "Classify " << value;
+        std::string type = UserInput::selectFromList(hWnd, prompt.str(), types);
+    }
+    consistencyScore = UserInput::getScoreInput(hWnd, "Rate how well these values align with your decision (1-10)", 1.0f, 10.0f);
+}
+
+void CoreMetaValueSpecification::assignValueWeights(HWND hWnd) {
+    float totalWeight = 0.0f;
+    for (const auto& value : fundamentalValues) {
+        std::stringstream prompt;
+        prompt << "Enter weight for " << value << " (1-100)";
+        float weight = UserInput::getScoreInput(hWnd, prompt.str(), 1.0f, 100.0f);
+        valueWeights[value] = weight / 100.0f;
+        totalWeight += weight;
+    }
+    
+    if (totalWeight > 0) {
+        for (auto& valuePair : valueWeights) {
+            valuePair.second /= (totalWeight / 100.0f);
+        }
+    }
+    
+    consistencyScore = std::min(10.0f, consistencyScore * (1.0f - std::abs(totalWeight - 100.0f) / 200.0f));
+}
+
+void CoreMetaValueSpecification::execute(HWND hWnd) {
+    identifyFundamentalValues(hWnd);
+    differentiateValueTypes(hWnd);
+    assignValueWeights(hWnd);
+}
+
+std::string CoreMetaValueSpecification::getReport() const {
+    std::stringstream report;
+    report << "Core Value Specification Report:\n";
+    report << "  - Value-Decision Consistency: " << consistencyScore << "/10\n";
+    report << "  - Fundamental Values and Weights:\n";
+    for (const auto& valuePair : valueWeights) {
+        report << "    - " << valuePair.first << ": " << (valuePair.second * 100) << "%\n";
+    }
+    if (consistencyScore < 6.0f) {
+        report << "  - Recommendation: Reassess value priorities for better alignment.\n";
+    }
+    return report.str();
+}
+
+void EthicalCoherence::applyEthicalFrameworks(HWND hWnd) {
+    for (auto& perspectivePair : perspectives) {
+        std::stringstream prompt;
+        prompt << "Enter weight for " << perspectivePair.first << " (1-100)";
+        perspectivePair.second.weight = UserInput::getScoreInput(hWnd, prompt.str(), 1.0f, 100.0f) / 100.0f;
+        prompt.str("");
+        prompt << "Enter analysis for " << perspectivePair.first;
+        perspectivePair.second.analysis = UserInput::getStringInput(hWnd, prompt.str());
+        prompt.str("");
+        prompt << "Rate " << perspectivePair.first << " alignment (1-10)";
+        perspectivePair.second.score = UserInput::getScoreInput(hWnd, prompt.str(), 1.0f, 10.0f);
+    }
+}
+
+void EthicalCoherence::computeCoherenceScore() {
+    float totalWeightedScore = 0.0f;
+    float totalWeight = 0.0f;
+    
+    for (const auto& perspectivePair : perspectives) {
+        totalWeightedScore += perspectivePair.second.score * perspectivePair.second.weight;
+        totalWeight += perspectivePair.second.weight;
+    }
+    
+    coherenceScore = totalWeight > 0 ? totalWeightedScore / totalWeight : 0.0f;
+}
+
+void EthicalCoherence::execute(HWND hWnd) {
+    applyEthicalFrameworks(hWnd);
+    computeCoherenceScore();
+}
+
+std::string EthicalCoherence::getReport() const {
+    std::stringstream report;
+    report << "Ethical Coherence Report:\n";
+    report << "  - Overall Coherence Score: " << coherenceScore << "/10\n";
+    
+    for (const auto& perspectivePair : perspectives) {
+        report << "  - " << perspectivePair.first << " (Weight: " << (perspectivePair.second.weight * 100) << "%)\n";
+        report << "    - Score: " << perspectivePair.second.score << "/10\n";
+        report << "    - Analysis: " << perspectivePair.second.analysis << "\n";
+    }
+    
+    if (coherenceScore < 6.0f) {
+        report << "  - Recommendation: Revisit ethical frameworks for stronger alignment.\n";
+    }
+    
+    return report.str();
+}
+
+void TimeHorizonIntegration::mapImpacts(HWND hWnd) {
+    std::vector<std::string> impactTypes = {"Positive", "Negative", "Neutral", "Mixed"};
+    for (auto& horizonPair : horizons) {
+        std::stringstream prompt;
+        prompt << "Select impact for " << horizonPair.first;
+        horizonPair.second.impact = UserInput::selectFromList(hWnd, prompt.str(), impactTypes);
+        prompt.str("");
+        prompt << "Rate importance of " << horizonPair.first << " (1-100)";
+        horizonPair.second.importance = UserInput::getScoreInput(hWnd, prompt.str(), 1.0f, 100.0f) / 100.0f;
+    }
+}
+
+void TimeHorizonIntegration::applyTemporalDiscounting() {
+    horizons["Immediate"].importance *= 1.2f;
+    horizons["1-6 months"].importance *= 1.0f;
+    horizons["1-5 years"].importance *= 0.8f;
+    horizons["5+ years"].importance *= 0.6f;
+    
+    float totalImportance = 0.0f;
+    for (const auto& horizonPair : horizons) {
+        totalImportance += horizonPair.second.importance;
+    }
+    if (totalImportance > 0) {
+        for (auto& horizonPair : horizons) {
+            horizonPair.second.importance /= totalImportance;
+        }
+    }
+}
+
+void TimeHorizonIntegration::simulateFutureSelf(HWND hWnd) {
+    std::string narrative = UserInput::getStringInput(hWnd, "Describe how this decision aligns with your future self");
+    float alignmentScore = UserInput::getScoreInput(hWnd, "Rate future-self alignment (1-10)", 1.0f, 10.0f);
+    
+    float immediateScore = horizons["Immediate"].impact == "Positive" ? 8.0f : 5.0f;
+    balanceScore = (immediateScore * 0.4f + alignmentScore * 0.6f);
+}
+
+void TimeHorizonIntegration::execute(HWND hWnd) {
+    mapImpacts(hWnd);
+    applyTemporalDiscounting();
+    simulateFutureSelf(hWnd);
+}
+
+std::string TimeHorizonIntegration::getReport() const {
+    std::stringstream report;
+    report << "Time Horizon Integration Report:\n";
+    report << "  - Temporal Balance Score: " << balanceScore << "/10\n";
+    
+    for (const auto& horizonPair : horizons) {
+        report << "  - " << horizonPair.first << ":\n";
+        report << "    - Impact: " << horizonPair.second.impact << "\n";
+        report << "    - Importance Weight: " << (horizonPair.second.importance * 100) << "%\n";
+    }
+    
+    if (balanceScore < 6.0f) {
+        report << "  - Recommendation: Focus on long-term impacts for better balance.\n";
+    }
+    
+    return report.str();
+}

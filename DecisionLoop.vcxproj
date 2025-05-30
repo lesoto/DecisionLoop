@@ -110,6 +110,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EntryPointSymbol>wWinMainCRTStartup</EntryPointSymbol>
       <AdditionalDependencies>comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(WindowsSdkDir)Lib\$(WindowsSDKVersion)\um\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -152,8 +153,17 @@
     <ClCompile Include="ValueEthicalLayer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="bolt.ico" />
+    <Image Include="brain.ico" />
     <Image Include="DecisionLoop.ico" />
+    <Image Include="eco.ico" />
+    <Image Include="fast.ico" />
+    <Image Include="group.ico" />
+    <Image Include="heart.ico" />
+    <Image Include="loop.ico" />
+    <Image Include="scales.ico" />
     <Image Include="small.ico" />
+    <Image Include="triage.ico" />
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="app.manifest" />

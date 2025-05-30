@@ -1,75 +1,68 @@
 #include <windows.h>
+#include <commctrl.h>
 #include "Resource.h"
 
-IDI_DECISIONLOOP ICON "DecisionLoop.ico"
-IDI_SMALL ICON "small.ico"
+#define IDC_STATIC -1
 
-IDD_LIST_DIALOG DIALOGEX 0, 0, 300, 200
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
-CAPTION "Select Option"
-FONT 8, "MS Shell Dlg"
-BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,189,179,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,240,179,50,14
-    LTEXT           "",IDC_EDIT_PROMPT,7,7,286,20
-    LISTBOX         IDC_LIST_OPTIONS,7,30,286,140,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-END
+// Application Icons
+IDI_DECISIONLOOP      ICON        "DecisionLoop.ico"
+IDI_SMALL             ICON        "small.ico"
 
-IDD_MAIN_DIALOG DIALOGEX 0, 0, 600, 400
+// Module Icons
+IDI_BRAIN             ICON        "brain.ico"
+IDI_HEART             ICON        "heart.ico"
+IDI_BOLT              ICON        "bolt.ico"
+IDI_SCALES            ICON        "scales.ico"
+IDI_ECO               ICON        "eco.ico"
+IDI_LOOP              ICON        "loop.ico"
+IDI_FAST              ICON        "fast.ico"
+IDI_TRIAGE            ICON        "triage.ico"
+IDI_GROUP             ICON        "group.ico"
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+
+IDD_MAIN_DIALOG DIALOGEX 0, 0, 800, 600
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 CAPTION "Decision Loop Dashboard"
-FONT 8, "MS Shell Dlg"
+FONT 10, "Segoe UI"
 BEGIN
-    // Top Bar
-    LTEXT           "Decision Loop",IDC_STATIC_TITLE,10,10,100,20
-    PUSHBUTTON      "Profile",IDC_BUTTON_PROFILE,500,10,80,20
+// Header with modern layout
+ICON            IDI_DECISIONLOOP, IDC_STATIC, 20, 20, 32, 32
+LTEXT           "Decision Loop", IDC_STATIC_TITLE, 60, 20, 200, 32, SS_LEFT
+PUSHBUTTON      "Profile", IDC_BUTTON_PROFILE, 680, 20, 80, 32, BS_FLAT
 
-    // Central Hub: Layer Buttons
-    PUSHBUTTON      "Mind & Emotions",IDC_BUTTON_COGNITIVE,10,50,130,50,BS_FLAT
-    PUSHBUTTON      "Values & Ethics",IDC_BUTTON_VALUE,150,50,130,50,BS_FLAT
-    PUSHBUTTON      "Context & Bias",IDC_BUTTON_SYSTEMS,290,50,130,50,BS_FLAT
-    PUSHBUTTON      "Action & Growth",IDC_BUTTON_IMPLEMENTATION,430,50,130,50,BS_FLAT
+// Main navigation cards (with icons and better spacing)
+PUSHBUTTON      "Mind & Emotions", IDC_BUTTON_COGNITIVE, 20, 80, 180, 60, BS_FLAT | BS_ICON | BS_LEFT
+PUSHBUTTON      "Values & Ethics", IDC_BUTTON_VALUE, 220, 80, 180, 60, BS_FLAT | BS_ICON | BS_LEFT
+PUSHBUTTON      "Context & Bias", IDC_BUTTON_SYSTEMS, 420, 80, 180, 60, BS_FLAT | BS_ICON | BS_LEFT
+PUSHBUTTON      "Action & Growth", IDC_BUTTON_IMPLEMENTATION, 620, 80, 160, 60, BS_FLAT | BS_ICON | BS_LEFT
 
-    // Collapsible Module Panels (Initially Hidden)
-    // Cognitive-Emotional Modules
-    GROUPBOX        "Cognitive-Emotional Modules",IDC_STATIC,10,110,270,100,WS_GROUP,WS_EX_TRANSPARENT
-    PUSHBUTTON      "🧠 Is my mind clear?",IDC_BUTTON_COGNITIVE_READINESS,20,130,240,30,BS_FLAT
-    CONTROL         "",IDC_STATIC_COGNITIVE_SCORE,"msctls_progress32",PBS_SMOOTH,260,135,50,10
-    PUSHBUTTON      "❤️ What am I feeling?",IDC_BUTTON_EMOTIONAL_CALIB,20,165,240,30,BS_FLAT
-    CONTROL         "",IDC_STATIC_EMOTIONAL_SCORE,"msctls_progress32",PBS_SMOOTH,260,170,50,10
-    PUSHBUTTON      "⚡ Do actions match goals?",IDC_BUTTON_IMPULSE_ALIGN,20,200,240,30,BS_FLAT
-    CONTROL         "",IDC_STATIC_IMPULSE_SCORE,"msctls_progress32",PBS_SMOOTH,260,205,50,10
+// Main content area
+GROUPBOX        "Modules", IDC_STATIC, 20, 160, 560, 320, WS_GROUP
 
-    // Value-Ethical Modules (Hidden)
-    GROUPBOX        "Value-Ethical Modules",IDC_STATIC,10,110,270,100,WS_GROUP,WS_EX_TRANSPARENT
-    PUSHBUTTON      "💎 What matters most?",IDC_BUTTON_CORE_VALUES,20,130,240,30,BS_FLAT
-    CONTROL         "",IDC_STATIC_VALUES_SCORE,"msctls_progress32",PBS_SMOOTH,260,135,50,10
-    PUSHBUTTON      "⚖️ Which option is ethical?",IDC_BUTTON_ETHICAL_COHERENCE,20,165,240,30,BS_FLAT
-    CONTROL         "",IDC_STATIC_ETHICAL_SCORE,"msctls_progress32",PBS_SMOOTH,260,170,50,10
-    PUSHBUTTON      "⏳ Short vs. long-term?",IDC_BUTTON_TIME_HORIZONS,20,200,240,30,BS_FLAT
-    CONTROL         "",IDC_STATIC_HORIZONS_SCORE,"msctls_progress32",PBS_SMOOTH,260,205,50,10
+// Module buttons with progress indicators
+PUSHBUTTON      "Is my mind clear?", IDC_BUTTON_COGNITIVE_READINESS, 40, 190, 440, 40, BS_FLAT
+CONTROL         "", IDC_STATIC_COGNITIVE_SCORE, "msctls_progress32", PBS_SMOOTH, 500, 200, 60, 20
 
-    // Systems/Context Modules (Hidden)
-    GROUPBOX        "Systems/Context Modules",IDC_STATIC,10,110,270,130,WS_GROUP,WS_EX_TRANSPARENT
-    PUSHBUTTON      "🔍 What am I missing?",IDC_BUTTON_BIAS_TESTING,20,130,240,30,BS_FLAT
-    CONTROL         "",IDC_STATIC_BIAS_SCORE,"msctls_progress32",PBS_SMOOTH,260,135,50,10
-    PUSHBUTTON      "🌐 How complex is this?",IDC_BUTTON_UNCERTAINTY_MGMT,20,165,240,30,BS_FLAT
-    CONTROL         "",IDC_STATIC_UNCERTAINTY_SCORE,"msctls_progress32",PBS_SMOOTH,260,170,50,10
-    PUSHBUTTON      "👥 What do my ‘parts’ say?",IDC_BUTTON_INTERNAL_DIALOGUE,20,200,240,30,BS_FLAT
-    CONTROL         "",IDC_STATIC_DIALOGUE_SCORE,"msctls_progress32",PBS_SMOOTH,260,205,50,10
-    PUSHBUTTON      "🌍 Social/Eco Impact?",IDC_BUTTON_SOCIAL_ECO,20,235,240,30,BS_FLAT
-    CONTROL         "",IDC_STATIC_SOCIAL_SCORE,"msctls_progress32",PBS_SMOOTH,260,240,50,10
+PUSHBUTTON      "What am I feeling?", IDC_BUTTON_EMOTIONAL_CALIB, 40, 240, 440, 40, BS_FLAT
+CONTROL         "", IDC_STATIC_EMOTIONAL_SCORE, "msctls_progress32", PBS_SMOOTH, 500, 250, 60, 20
 
-    // Implementation/Learning Modules (Hidden)
-    GROUPBOX        "Implementation/Learning Modules",IDC_STATIC,10,110,270,60,WS_GROUP,WS_EX_TRANSPARENT
-    PUSHBUTTON      "🔄 What did I learn?",IDC_BUTTON_FEEDBACK_LOOPS,20,130,240,30,BS_FLAT
-    CONTROL         "",IDC_STATIC_FEEDBACK_SCORE,"msctls_progress32",PBS_SMOOTH,260,135,50,10
+PUSHBUTTON      "Do actions match goals?", IDC_BUTTON_IMPULSE_ALIGN, 40, 290, 440, 40, BS_FLAT
+CONTROL         "", IDC_STATIC_IMPULSE_SCORE, "msctls_progress32", PBS_SMOOTH, 500, 300, 60, 20
 
-    // Right Sidebar: Specialized Modes
-    PUSHBUTTON      "🏃 Fast-Loop",IDC_BUTTON_FAST_LOOP,480,110,100,30,BS_FLAT
-    PUSHBUTTON      "🚨 Triage Mode",IDC_BUTTON_TRIAGE_MODE,480,150,100,30,BS_FLAT
-    PUSHBUTTON      "👥 Group Mode",IDC_BUTTON_GROUP_MODE,480,190,100,30,BS_FLAT
+PUSHBUTTON      "What matters most?", IDC_BUTTON_CORE_VALUES, 40, 340, 440, 40, BS_FLAT
+CONTROL         "", IDC_STATIC_VALUES_SCORE, "msctls_progress32", PBS_SMOOTH, 500, 350, 60, 20
 
-    // Report Display
-    EDITTEXT        IDC_EDIT_REPORT,10,250,560,140,ES_MULTILINE | ES_READONLY | WS_VSCROLL
+PUSHBUTTON      "Social Impact?", IDC_BUTTON_SOCIAL_ECO, 40, 390, 440, 40, BS_FLAT
+CONTROL         "", IDC_STATIC_SOCIAL_SCORE, "msctls_progress32", PBS_SMOOTH, 500, 400, 60, 20
+
+// Sidebar with specialized modes
+GROUPBOX        "Specialized Modes", IDC_STATIC_SIDEBAR, 600, 160, 180, 320
+PUSHBUTTON      "Fast-Loop", IDC_BUTTON_FAST_LOOP, 620, 190, 140, 50, BS_FLAT | BS_ICON
+PUSHBUTTON      "Triage Mode", IDC_BUTTON_TRIAGE_MODE, 620, 250, 140, 50, BS_FLAT | BS_ICON
+PUSHBUTTON      "Group Mode", IDC_BUTTON_GROUP_MODE, 620, 310, 140, 50, BS_FLAT | BS_ICON
+
+// Bottom report area
+GROUPBOX        "Report", IDC_STATIC, 20, 500, 760, 80
+EDITTEXT        IDC_EDIT_REPORT, 30, 520, 740, 50, ES_MULTILINE | ES_READONLY | WS_VSCROLL
 END

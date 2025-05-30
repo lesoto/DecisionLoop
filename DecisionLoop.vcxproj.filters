@@ -91,5 +91,32 @@
     <ResourceCompile Include="DecisionLoop.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+    <Image Include="bolt.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="brain.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="eco.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="fast.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="group.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="heart.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="loop.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="scales.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="triage.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

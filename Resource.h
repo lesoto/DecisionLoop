@@ -1,73 +1,61 @@
 #pragma once
 
-#define IDI_DECISIONLOOP                107
-#define IDI_SMALL                       108
-#define IDC_MYICON                      2
-#define IDD_MAIN_DIALOG                 102
-#define IDD_INPUT_DIALOG                103
-#define IDD_LIST_DIALOG                 104
+#define IDI_DECISIONLOOP 101
+#define IDI_SMALL        102
+#define IDI_BRAIN        103
+#define IDI_GROUP        104
+#define IDI_ECO       105
+#define IDI_FAST         106
+#define IDI_TRIAGE       107
+#define IDI_BOLT      108
+#define IDI_SCALES       109
+#define IDI_HEART        110
+#define IDI_LOOP      111
 
-// Top Bar
-#define IDC_STATIC_TITLE                1000
-#define IDC_BUTTON_PROFILE              1001
-#define IDC_BUTTON_RUN                  1001  
+#define IDD_INPUT_DIALOG 201
+#define IDD_LIST_DIALOG 202
+#define IDD_MAIN_DIALOG  203
 
-// Layer Buttons
-#define IDC_BUTTON_COGNITIVE            1002
-#define IDC_BUTTON_VALUE                1003
-#define IDC_BUTTON_SYSTEMS              1004
-#define IDC_BUTTON_IMPLEMENTATION       1005
+#define IDC_EDIT_PROMPT          301
+#define IDC_STATIC_INSTRUCTION   302
+#define IDC_EDIT_INPUT        303
+#define IDC_LIST_OPTIONS         304
+#define IDC_STATIC_TITLE         305
+#define IDC_BUTTON_PROFILE       306
+#define IDC_STATIC_SIDEBAR    307
+#define IDC_BUTTON_COGNITIVE  308
+#define IDC_BUTTON_VALUE         309
+#define IDC_BUTTON_SYSTEMS       310
+#define IDC_BUTTON_IMPLEMENTATION 311
+#define IDC_BUTTON_COGNITIVE_READINESS 312
+#define IDC_STATIC_COGNITIVE_SCORE 313
+#define IDC_BUTTON_EMOTIONAL_CALIB 314
+#define IDC_STATIC_EMOTIONAL_SCORE 315
+#define IDC_BUTTON_IMPULSE_ALIGN 316
+#define IDC_STATIC_IMPULSE_SCORE 317
+#define IDC_BUTTON_CORE_VALUES 318
+#define IDC_STATIC_VALUES_SCORE 319
+#define IDC_BUTTON_ETHICAL_COHERENCE 320
+#define IDC_STATIC_ETHICAL_SCORE 321
+#define IDC_BUTTON_TIME_HORIZONS 322
+#define IDC_STATIC_HORIZONS_SCORE 323
+#define IDC_BUTTON_BIAS_TESTING  324
+#define IDC_STATIC_BIAS_SCORE    325
+#define IDC_BUTTON_UNCERTAINTY_MGMT 326
+#define IDC_STATIC_UNCERTAINTY_SCORE 327
+#define IDC_BUTTON_INTERNAL_DIALOGUE 328
+#define IDC_STATIC_DIALOGUE_SCORE 329
+#define IDC_BUTTON_SOCIAL_ECO    330
+#define IDC_STATIC_SOCIAL_SCORE 331
+#define IDC_BUTTON_FEEDBACK_LOOPS 332
+#define IDC_STATIC_FEEDBACK_SCORE 333
+#define IDC_BUTTON_FAST_LOOP     334
+#define IDC_BUTTON_TRIAGE_MODE 335
+#define IDC_BUTTON_GROUP_MODE 336
+#define IDC_EDIT_REPORT          337
 
-// Module Buttons (Cognitive-Emotional)
-#define IDC_BUTTON_COGNITIVE_READINESS  1006
-#define IDC_BUTTON_EMOTIONAL_CALIB      1007
-#define IDC_BUTTON_IMPULSE_ALIGN        1008
+#define COLOR_COGNITIVE      RGB(100, 149, 237) // Cornflower Blue
+#define COLOR_VALUE          RGB(60, 179, 113) // Medium Sea Green
+#define COLOR_SYSTEMS        RGB(255, 165, 0)   // Orange
+#define COLOR_IMPLEMENTATION RGB(148, 0, 211)   // Dark Violet
 
-// Module Buttons (Value-Ethical)
-#define IDC_BUTTON_CORE_VALUES          1009
-#define IDC_BUTTON_ETHICAL_COHERENCE    1010
-#define IDC_BUTTON_TIME_HORIZONS        1011
-
-// Module Buttons (Systems/Context)
-#define IDC_BUTTON_BIAS_TESTING         1012
-#define IDC_BUTTON_UNCERTAINTY_MGMT     1013
-#define IDC_BUTTON_INTERNAL_DIALOGUE    1014
-#define IDC_BUTTON_SOCIAL_ECO           1015
-
-// Module Buttons (Implementation/Learning)
-#define IDC_BUTTON_FEEDBACK_LOOPS       1016
-
-// Specialized Modes (Sidebar)
-#define IDC_BUTTON_FAST_LOOP            1017
-#define IDC_BUTTON_TRIAGE_MODE          1018
-#define IDC_BUTTON_GROUP_MODE           1019
-
-// Report Display
-#define IDC_EDIT_REPORT                 1020
-
-// Progress Indicators
-#define IDC_STATIC_COGNITIVE_SCORE      1021
-#define IDC_STATIC_EMOTIONAL_SCORE      1022
-#define IDC_STATIC_IMPULSE_SCORE        1023
-#define IDC_STATIC_VALUES_SCORE         1024
-#define IDC_STATIC_ETHICAL_SCORE        1025
-#define IDC_STATIC_HORIZONS_SCORE       1026
-#define IDC_STATIC_BIAS_SCORE           1027
-#define IDC_STATIC_UNCERTAINTY_SCORE    1028
-#define IDC_STATIC_DIALOGUE_SCORE       1029
-#define IDC_STATIC_SOCIAL_SCORE         1030
-#define IDC_STATIC_FEEDBACK_SCORE       1031
-
-// Colors
-#define COLOR_COGNITIVE                 RGB(100, 149, 237) // Blue
-#define COLOR_VALUE                     RGB(60, 179, 113)  // Green
-#define COLOR_SYSTEMS                   RGB(255, 165, 0)   // Orange
-#define COLOR_IMPLEMENTATION            RGB(148, 0, 211)   // Purple
-
-#define IDC_STATIC                      -1
-
-#define IDC_EDIT_PROMPT                 1040
-#define IDC_EDIT_INPUT                  1041
-#define IDC_STATIC_INSTRUCTION          1042
-#define IDC_LIST_OPTIONS                1043
-#define IDC_COMBO_MODE                  1044

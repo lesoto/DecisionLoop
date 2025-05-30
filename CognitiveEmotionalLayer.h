@@ -5,7 +5,7 @@
 
 class CognitiveReadiness : public DecisionComponent {
 private:
-    float readinessScore;
+    float readinessScore = 0.0f;  // Initialize to 0
     std::string cognitiveMode;
     std::vector<std::string> readinessTechniques;
 
@@ -37,7 +37,7 @@ public:
 
 class ImpulseAlignment : public DecisionComponent {
 private:
-    float alignmentScore;
+    float alignmentScore = 0.0f;  // Initialize to 0
     std::vector<std::string> impulses;
 
     void simulateImpulses(HWND hWnd);

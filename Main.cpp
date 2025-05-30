@@ -27,6 +27,122 @@ static HBRUSH hBrushValue = nullptr;
 static HBRUSH hBrushSystems = nullptr;
 static HBRUSH hBrushImplementation = nullptr;
 
+// Add these constants at the top of the file with other static variables
+static HPEN hPenBorder = nullptr;
+static HPEN hPenHighlight = nullptr;
+
+// Add this function before MainDlgProc
+void DrawModernButton(LPDRAWITEMSTRUCT pdis)
+{
+    RECT rcItem = pdis->rcItem;
+    HDC hdc = pdis->hDC;
+    bool isPressed = (pdis->itemState & ODS_SELECTED) != 0;
+    bool isFocused = (pdis->itemState & ODS_FOCUS) != 0;
+    bool isDisabled = (pdis->itemState & ODS_DISABLED) != 0;
+    bool isHot = (pdis->itemState & ODS_HOTLIGHT) != 0;
+
+    // Create gradient background
+    COLORREF baseColor;
+    switch (pdis->CtlID)
+    {
+    case IDC_BUTTON_COGNITIVE:
+        baseColor = COLOR_COGNITIVE;
+        break;
+    case IDC_BUTTON_VALUE:
+        baseColor = COLOR_VALUE;
+        break;
+    case IDC_BUTTON_SYSTEMS:
+        baseColor = COLOR_SYSTEMS;
+        break;
+    case IDC_BUTTON_IMPLEMENTATION:
+        baseColor = COLOR_IMPLEMENTATION;
+        break;
+    default:
+        baseColor = RGB(240, 240, 240); // Default color
+    }
+
+    // Adjust colors based on button state
+    COLORREF fillColor = baseColor;
+    if (isPressed)
+    {
+        // Darken color when pressed
+        fillColor = RGB(
+            GetRValue(baseColor) * 0.8,
+            GetGValue(baseColor) * 0.8,
+            GetBValue(baseColor) * 0.8
+        );
+    }
+    else if (isHot)
+    {
+        // Lighten color when hovered
+        fillColor = RGB(
+            min(255, GetRValue(baseColor) * 1.2),
+            min(255, GetGValue(baseColor) * 1.2),
+            min(255, GetBValue(baseColor) * 1.2)
+        );
+    }
+
+    // Fill background
+    HBRUSH hBrush = CreateSolidBrush(fillColor);
+    FillRect(hdc, &rcItem, hBrush);
+    DeleteObject(hBrush);
+
+    // Draw border
+    if (!isPressed)
+    {
+        // Draw highlight on top and left edges
+        HPEN hHighlight = CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
+        HPEN hOldPen = (HPEN)SelectObject(hdc, hHighlight);
+        MoveToEx(hdc, rcItem.left, rcItem.bottom - 1, NULL);
+        LineTo(hdc, rcItem.left, rcItem.top);
+        LineTo(hdc, rcItem.right - 1, rcItem.top);
+        SelectObject(hdc, hOldPen);
+        DeleteObject(hHighlight);
+    }
+
+    // Draw shadow on bottom and right edges
+    HPEN hShadow = CreatePen(PS_SOLID, 1, RGB(128, 128, 128));
+    HPEN hOldPen = (HPEN)SelectObject(hdc, hShadow);
+    MoveToEx(hdc, rcItem.right - 1, rcItem.top, NULL);
+    LineTo(hdc, rcItem.right - 1, rcItem.bottom - 1);
+    LineTo(hdc, rcItem.left, rcItem.bottom - 1);
+    SelectObject(hdc, hOldPen);
+    DeleteObject(hShadow);
+
+    // Draw text
+    SetBkMode(hdc, TRANSPARENT);
+    COLORREF textColor = isDisabled ? RGB(160, 160, 160) : RGB(0, 0, 0);
+    SetTextColor(hdc, textColor);
+
+    // Get button text
+    WCHAR szText[256];
+    GetWindowText(pdis->hwndItem, szText, 256);
+
+    // Adjust text position if button is pressed
+    RECT rcText = rcItem;
+    if (isPressed)
+    {
+        OffsetRect(&rcText, 1, 1);
+    }
+
+    // Draw text with antialiasing
+    HFONT hFont = (HFONT)SendMessage(pdis->hwndItem, WM_GETFONT, 0, 0);
+    if (!hFont) hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+    HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+    
+    DrawText(hdc, szText, -1, &rcText, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    
+    SelectObject(hdc, hOldFont);
+
+    // Draw focus rect if needed
+    if (isFocused && !isPressed)
+    {
+        RECT rcFocus = rcItem;
+        InflateRect(&rcFocus, -3, -3);
+        DrawFocusRect(hdc, &rcFocus);
+    }
+}
+
 INT_PTR CALLBACK MainDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     static HWND hEditReport;
@@ -41,6 +157,21 @@ INT_PTR CALLBACK MainDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
         INITCOMMONCONTROLSEX icex = { sizeof(icex), ICC_PROGRESS_CLASS | ICC_STANDARD_CLASSES };
         InitCommonControlsEx(&icex);
 
+        HINSTANCE hInstance = GetModuleHandle(NULL);
+        
+        // Set application icons
+        HICON hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_DECISIONLOOP));
+        SendMessage(hDlg, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+        SendMessage(hDlg, WM_SETICON, ICON_SMALL, (LPARAM)LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SMALL)));
+
+        // Set button icons
+        SendDlgItemMessage(hDlg, IDC_BUTTON_COGNITIVE_READINESS, BM_SETIMAGE, IMAGE_ICON, 
+            (LPARAM)LoadIcon(hInstance, MAKEINTRESOURCE(IDI_BRAIN)));
+        SendDlgItemMessage(hDlg, IDC_BUTTON_EMOTIONAL_CALIB, BM_SETIMAGE, IMAGE_ICON, 
+            (LPARAM)LoadIcon(hInstance, MAKEINTRESOURCE(IDI_HEART)));
+        SendDlgItemMessage(hDlg, IDC_BUTTON_COGNITIVE, BM_SETIMAGE, IMAGE_ICON, 
+            (LPARAM)LoadIcon(hInstance, MAKEINTRESOURCE(IDI_BRAIN)));
+
         hEditReport = GetDlgItem(hDlg, IDC_EDIT_REPORT);
 
         // Create color brushes
@@ -49,18 +180,15 @@ INT_PTR CALLBACK MainDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
         hBrushSystems = CreateSolidBrush(COLOR_SYSTEMS);
         hBrushImplementation = CreateSolidBrush(COLOR_IMPLEMENTATION);
 
-        // Map layer buttons to their module panels (group boxes)
         layerPanels[IDC_BUTTON_COGNITIVE] = GetDlgItem(hDlg, IDC_BUTTON_COGNITIVE_READINESS);
         layerPanels[IDC_BUTTON_VALUE] = GetDlgItem(hDlg, IDC_BUTTON_CORE_VALUES);
         layerPanels[IDC_BUTTON_SYSTEMS] = GetDlgItem(hDlg, IDC_BUTTON_BIAS_TESTING);
         layerPanels[IDC_BUTTON_IMPLEMENTATION] = GetDlgItem(hDlg, IDC_BUTTON_FEEDBACK_LOOPS);
 
-        // Hide all module panels initially
         for (const auto& pair : layerPanels)
         {
             ShowWindow(pair.second, SW_HIDE);
             EnableWindow(pair.second, FALSE);
-            // Hide all child controls (module buttons and progress bars)
             HWND hChild = GetNextDlgGroupItem(hDlg, pair.second, FALSE);
             while (hChild)
             {
@@ -70,12 +198,11 @@ INT_PTR CALLBACK MainDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
             }
         }
 
-        // Set tooltips
         HWND hToolTip = CreateWindowEx(NULL, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_ALWAYSTIP,
-            CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, hDlg, NULL, GetModuleHandle(NULL), NULL);
+            CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
+            hDlg, NULL, hInstance, NULL);
         TOOLINFO toolInfo = { sizeof(toolInfo), TTF_IDISHWND | TTF_SUBCLASS, hDlg, 0, {0, 0, 0, 0}, NULL, NULL };
 
-        // Store tooltip strings to ensure lifetime
         tooltipStrings = {
             L"Assess mental readiness and emotional alignment",
             L"Evaluate core values and ethical alignment",
@@ -103,13 +230,28 @@ INT_PTR CALLBACK MainDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
             SendMessage(hToolTip, TTM_ADDTOOL, 0, (LPARAM)&toolInfo);
         }
 
-        // Set dialog icon
-        HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_DECISIONLOOP));
-        SendMessage(hDlg, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
-        SendMessage(hDlg, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
-        DestroyIcon(hIcon);
+        DWORD buttonStyle = GetWindowLong(GetDlgItem(hDlg, IDC_BUTTON_COGNITIVE), GWL_STYLE);
+        buttonStyle |= BS_OWNERDRAW;
+        SetWindowLong(GetDlgItem(hDlg, IDC_BUTTON_COGNITIVE), GWL_STYLE, buttonStyle);
+        SetWindowLong(GetDlgItem(hDlg, IDC_BUTTON_VALUE), GWL_STYLE, buttonStyle);
+        SetWindowLong(GetDlgItem(hDlg, IDC_BUTTON_SYSTEMS), GWL_STYLE, buttonStyle);
+        SetWindowLong(GetDlgItem(hDlg, IDC_BUTTON_IMPLEMENTATION), GWL_STYLE, buttonStyle);
 
         return (INT_PTR)TRUE;
+    }
+
+    case WM_ERASEBKGND:
+    {
+        HDC hdc = (HDC)wParam;
+        RECT rc;
+        GetClientRect(hDlg, &rc);
+        
+        // Create and use a solid brush instead of gradient
+        HBRUSH hBrush = CreateSolidBrush(RGB(240, 240, 240));
+        FillRect(hdc, &rc, hBrush);
+        DeleteObject(hBrush);
+        
+        return TRUE;
     }
 
     case WM_CTLCOLORBTN:
@@ -140,6 +282,10 @@ INT_PTR CALLBACK MainDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
         {
             SetBkColor(hdc, COLOR_IMPLEMENTATION);
             return (INT_PTR)hBrushImplementation;
+        }
+        if ((HWND)lParam == GetDlgItem(hDlg, IDC_BUTTON_COGNITIVE)) {
+            SetBkMode((HDC)wParam, TRANSPARENT);
+            return (LRESULT)GetStockObject(NULL_BRUSH);
         }
         return (INT_PTR)FALSE;
     }
@@ -290,12 +436,56 @@ INT_PTR CALLBACK MainDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
         break;
     }
 
+    case WM_DRAWITEM:
+    {
+        if (((LPDRAWITEMSTRUCT)lParam)->CtlID == IDC_BUTTON_COGNITIVE) {
+            DrawModernButton((LPDRAWITEMSTRUCT)lParam);
+            return TRUE;
+        }
+
+        LPDRAWITEMSTRUCT pdis = (LPDRAWITEMSTRUCT)lParam;
+        int id = pdis->CtlID;
+        COLORREF btnColor = RGB(255, 255, 255); // Default
+        if (id == IDC_BUTTON_COGNITIVE || id == IDC_BUTTON_COGNITIVE_READINESS ||
+            id == IDC_BUTTON_EMOTIONAL_CALIB || id == IDC_BUTTON_IMPULSE_ALIGN)
+            btnColor = COLOR_COGNITIVE;
+        else if (id == IDC_BUTTON_VALUE || id == IDC_BUTTON_CORE_VALUES ||
+            id == IDC_BUTTON_ETHICAL_COHERENCE || id == IDC_BUTTON_TIME_HORIZONS)
+            btnColor = COLOR_VALUE;
+        else if (id == IDC_BUTTON_SYSTEMS || id == IDC_BUTTON_BIAS_TESTING ||
+            id == IDC_BUTTON_UNCERTAINTY_MGMT || id == IDC_BUTTON_INTERNAL_DIALOGUE ||
+            id == IDC_BUTTON_SOCIAL_ECO)
+            btnColor = COLOR_SYSTEMS;
+        else if (id == IDC_BUTTON_IMPLEMENTATION || id == IDC_BUTTON_FEEDBACK_LOOPS)
+            btnColor = COLOR_IMPLEMENTATION;
+
+        HBRUSH hBrush = CreateSolidBrush(btnColor);
+        FillRect(pdis->hDC, &pdis->rcItem, hBrush);
+        DeleteObject(hBrush);
+
+        HBRUSH hBorderBrush = CreateSolidBrush(RGB(150, 150, 150));
+        FrameRect(pdis->hDC, &pdis->rcItem, hBorderBrush);
+        DeleteObject(hBorderBrush);
+
+        WCHAR szText[256];
+        GetWindowText(pdis->hwndItem, szText, 256);
+        SetBkMode(pdis->hDC, TRANSPARENT);
+        SetTextColor(pdis->hDC, RGB(0, 0, 0));
+        DrawText(pdis->hDC, szText, -1, &pdis->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+        return TRUE;
+    }
+
     case WM_DESTROY:
     {
         DeleteObject(hBrushCognitive);
         DeleteObject(hBrushValue);
         DeleteObject(hBrushSystems);
         DeleteObject(hBrushImplementation);
+
+        if (hPenBorder) DeleteObject(hPenBorder);
+        if (hPenHighlight) DeleteObject(hPenHighlight);
+        
         return (INT_PTR)TRUE;
     }
 
@@ -313,3 +503,5 @@ std::wstring StringToWString(const std::string& str)
     MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), &wstrTo[0], size_needed);
     return wstrTo;
 }
+
+

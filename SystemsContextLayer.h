@@ -1,4 +1,6 @@
 #pragma once
+
+#include "./json.hpp"  
 #include "DecisionComponent.h"
 #include <string>
 #include <vector>
@@ -22,8 +24,8 @@ public:
 
 class UncertaintyComplexityManagement : public DecisionComponent {
 private:
-    float adaptationScore;
-    float navigationScore;
+    float adaptationScore = 0.0f;  // Initialize to 0
+    float navigationScore = 0.0f;  // Initialize to 0
     std::string cynefinCategory;
     std::vector<std::string> scenarios;
 
@@ -44,8 +46,8 @@ private:
         float influence;
     };
     std::map<std::string, RoleData> roles;
-    float coherenceScore;
-    float resolutionScore;
+    float coherenceScore = 0.0f;  // Initialize to 0
+    float resolutionScore = 0.0f;  // Initialize to 0
 
     void identifyInternalRoles(HWND hWnd);
     void conductDialogue(HWND hWnd);
@@ -62,8 +64,8 @@ private:
     std::vector<std::string> affectedRelationships;
     std::vector<std::string> powerDynamics;
     std::vector<std::string> environmentalFactors;
-    float fitScore;
-    float impactScore;
+    float fitScore = 0.0f;  // Initialize to 0
+    float impactScore = 0.0f;  // Initialize to 0
 
     void assessRelationships(HWND hWnd);
     void analyzePowerDynamics(HWND hWnd);

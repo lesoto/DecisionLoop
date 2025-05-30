@@ -23,7 +23,7 @@ private:
     struct LearningEntry {
         std::string context;
         std::vector<std::string> steps;
-        float confidence;
+        float confidence = 0.0f;  // Initialize to 0
         std::string lessons;
     };
 

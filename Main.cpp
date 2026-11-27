@@ -12,27 +12,34 @@
 #include "ImplementationLearningLayer.h"
 #include "SpecializedModes.h"
 
+#pragma comment(lib, "Comctl32.lib")
+
+#if defined _M_IX86
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#elif defined _M_IA64
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='ia64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#elif defined _M_X64
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#else
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#endif
+
+// Forward declarations
 INT_PTR CALLBACK MainDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 std::wstring StringToWString(const std::string& str);
 
+// Global variables
 DecisionLoop* g_decisionLoop = nullptr;
-
-// Store module panel visibility
 static std::map<int, HWND> layerPanels;
-static int currentLayer = 0; // 0 = none, 1 = Cognitive, 2 = Value, 3 = Systems, 4 = Implementation
-
-// Color brushes
+static int currentLayer = 0;
 static HBRUSH hBrushCognitive = nullptr;
 static HBRUSH hBrushValue = nullptr;
 static HBRUSH hBrushSystems = nullptr;
 static HBRUSH hBrushImplementation = nullptr;
-
-// Add these constants at the top of the file with other static variables
 static HPEN hPenBorder = nullptr;
 static HPEN hPenHighlight = nullptr;
 
-// Add this function before MainDlgProc
-void DrawModernButton(LPDRAWITEMSTRUCT pdis)
+static void DrawModernButton(LPDRAWITEMSTRUCT pdis)
 {
     RECT rcItem = pdis->rcItem;
     HDC hdc = pdis->hDC;
@@ -41,8 +48,7 @@ void DrawModernButton(LPDRAWITEMSTRUCT pdis)
     bool isDisabled = (pdis->itemState & ODS_DISABLED) != 0;
     bool isHot = (pdis->itemState & ODS_HOTLIGHT) != 0;
 
-    // Create gradient background
-    COLORREF baseColor;
+    COLORREF baseColor = RGB(240, 240, 240); 
     switch (pdis->CtlID)
     {
     case IDC_BUTTON_COGNITIVE:
@@ -151,25 +157,43 @@ INT_PTR CALLBACK MainDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
 
     switch (message)
     {
+    
+
     case WM_INITDIALOG:
     {
-        // Initialize common controls
-        INITCOMMONCONTROLSEX icex = { sizeof(icex), ICC_PROGRESS_CLASS | ICC_STANDARD_CLASSES };
-        InitCommonControlsEx(&icex);
+        if (!g_decisionLoop)
+        {
+            MessageBox(hDlg, L"Failed to initialize DecisionLoop.", L"Error", MB_ICONERROR);
+            EndDialog(hDlg, -1);
+            return (INT_PTR)FALSE;
+        }
+
+        INITCOMMONCONTROLSEX iccex = { 
+            sizeof(INITCOMMONCONTROLSEX),
+            ICC_BAR_CLASSES | ICC_PROGRESS_CLASS | ICC_STANDARD_CLASSES 
+        };
+        InitCommonControlsEx(&iccex);
 
         HINSTANCE hInstance = GetModuleHandle(NULL);
-        
+
         // Set application icons
         HICON hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_DECISIONLOOP));
         SendMessage(hDlg, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
         SendMessage(hDlg, WM_SETICON, ICON_SMALL, (LPARAM)LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SMALL)));
 
+        // Create toolbar
+        HWND hToolBar = CreateWindowEx(0, TOOLBARCLASSNAME, NULL,
+            WS_CHILD | WS_VISIBLE | TBSTYLE_FLAT | TBSTYLE_TOOLTIPS,
+            0, 0, 0, 0, hDlg, (HMENU)IDR_TOOLBAR, hInstance, NULL);
+
+        SendMessage(hToolBar, TB_BUTTONSTRUCTSIZE, (WPARAM)sizeof(TBBUTTON), 0);
+
         // Set button icons
-        SendDlgItemMessage(hDlg, IDC_BUTTON_COGNITIVE_READINESS, BM_SETIMAGE, IMAGE_ICON, 
+        SendDlgItemMessage(hDlg, IDC_BUTTON_COGNITIVE_READINESS, BM_SETIMAGE, IMAGE_ICON,
             (LPARAM)LoadIcon(hInstance, MAKEINTRESOURCE(IDI_BRAIN)));
-        SendDlgItemMessage(hDlg, IDC_BUTTON_EMOTIONAL_CALIB, BM_SETIMAGE, IMAGE_ICON, 
+        SendDlgItemMessage(hDlg, IDC_BUTTON_EMOTIONAL_CALIB, BM_SETIMAGE, IMAGE_ICON,
             (LPARAM)LoadIcon(hInstance, MAKEINTRESOURCE(IDI_HEART)));
-        SendDlgItemMessage(hDlg, IDC_BUTTON_COGNITIVE, BM_SETIMAGE, IMAGE_ICON, 
+        SendDlgItemMessage(hDlg, IDC_BUTTON_COGNITIVE, BM_SETIMAGE, IMAGE_ICON,
             (LPARAM)LoadIcon(hInstance, MAKEINTRESOURCE(IDI_BRAIN)));
 
         hEditReport = GetDlgItem(hDlg, IDC_EDIT_REPORT);
@@ -185,22 +209,22 @@ INT_PTR CALLBACK MainDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
         layerPanels[IDC_BUTTON_SYSTEMS] = GetDlgItem(hDlg, IDC_BUTTON_BIAS_TESTING);
         layerPanels[IDC_BUTTON_IMPLEMENTATION] = GetDlgItem(hDlg, IDC_BUTTON_FEEDBACK_LOOPS);
 
-        for (const auto& pair : layerPanels)
+        // Enumerate siblings once. Dialog navigation wraps and skips hidden controls.
+        for (HWND child = GetWindow(hDlg, GW_CHILD); child;
+             child = GetWindow(child, GW_HWNDNEXT))
         {
-            ShowWindow(pair.second, SW_HIDE);
-            EnableWindow(pair.second, FALSE);
-            HWND hChild = GetNextDlgGroupItem(hDlg, pair.second, FALSE);
-            while (hChild)
+            const int controlId = GetDlgCtrlID(child);
+            if (controlId >= IDC_BUTTON_COGNITIVE_READINESS &&
+                controlId <= IDC_STATIC_FEEDBACK_SCORE)
             {
-                ShowWindow(hChild, SW_HIDE);
-                EnableWindow(hChild, FALSE);
-                hChild = GetNextDlgGroupItem(hDlg, hChild, TRUE);
+                ShowWindow(child, SW_HIDE);
+                EnableWindow(child, FALSE);
             }
         }
-
-        HWND hToolTip = CreateWindowEx(NULL, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_ALWAYSTIP,
-            CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
+        HWND hToolTip = CreateWindowEx(0, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_ALWAYSTIP,
+            CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
             hDlg, NULL, hInstance, NULL);
+
         TOOLINFO toolInfo = { sizeof(toolInfo), TTF_IDISHWND | TTF_SUBCLASS, hDlg, 0, {0, 0, 0, 0}, NULL, NULL };
 
         tooltipStrings = {
@@ -240,268 +264,151 @@ INT_PTR CALLBACK MainDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
         return (INT_PTR)TRUE;
     }
 
-    case WM_ERASEBKGND:
+    case WM_SIZE:
     {
-        HDC hdc = (HDC)wParam;
         RECT rc;
         GetClientRect(hDlg, &rc);
-        
-        // Create and use a solid brush instead of gradient
-        HBRUSH hBrush = CreateSolidBrush(RGB(240, 240, 240));
-        FillRect(hdc, &rc, hBrush);
-        DeleteObject(hBrush);
-        
-        return TRUE;
-    }
 
-    case WM_CTLCOLORBTN:
-    {
-        HDC hdc = (HDC)wParam;
-        HWND hWnd = (HWND)lParam;
-        int id = GetDlgCtrlID(hWnd);
-        if (id == IDC_BUTTON_COGNITIVE || id == IDC_BUTTON_COGNITIVE_READINESS ||
-            id == IDC_BUTTON_EMOTIONAL_CALIB || id == IDC_BUTTON_IMPULSE_ALIGN)
+        HWND hToolBar = GetDlgItem(hDlg, IDR_TOOLBAR);
+        if (hToolBar)
         {
-            SetBkColor(hdc, COLOR_COGNITIVE);
-            return (INT_PTR)hBrushCognitive;
+            SendMessage(hToolBar, TB_AUTOSIZE, 0, 0);
         }
-        else if (id == IDC_BUTTON_VALUE || id == IDC_BUTTON_CORE_VALUES ||
-                 id == IDC_BUTTON_ETHICAL_COHERENCE || id == IDC_BUTTON_TIME_HORIZONS)
-        {
-            SetBkColor(hdc, COLOR_VALUE);
-            return (INT_PTR)hBrushValue;
-        }
-        else if (id == IDC_BUTTON_SYSTEMS || id == IDC_BUTTON_BIAS_TESTING ||
-                 id == IDC_BUTTON_UNCERTAINTY_MGMT || id == IDC_BUTTON_INTERNAL_DIALOGUE ||
-                 id == IDC_BUTTON_SOCIAL_ECO)
-        {
-            SetBkColor(hdc, COLOR_SYSTEMS);
-            return (INT_PTR)hBrushSystems;
-        }
-        else if (id == IDC_BUTTON_IMPLEMENTATION || id == IDC_BUTTON_FEEDBACK_LOOPS)
-        {
-            SetBkColor(hdc, COLOR_IMPLEMENTATION);
-            return (INT_PTR)hBrushImplementation;
-        }
-        if ((HWND)lParam == GetDlgItem(hDlg, IDC_BUTTON_COGNITIVE)) {
-            SetBkMode((HDC)wParam, TRANSPARENT);
-            return (LRESULT)GetStockObject(NULL_BRUSH);
-        }
-        return (INT_PTR)FALSE;
+
+        InvalidateRect(hDlg, NULL, TRUE);
+        return TRUE;
     }
 
     case WM_COMMAND:
     {
-        int id = LOWORD(wParam);
-        int notifyCode = HIWORD(wParam);
-
-        // Handle Layer Button Clicks (Toggle Panels)
-        if (notifyCode == BN_CLICKED && (id == IDC_BUTTON_COGNITIVE || id == IDC_BUTTON_VALUE ||
-            id == IDC_BUTTON_SYSTEMS || id == IDC_BUTTON_IMPLEMENTATION))
+        int wmId = LOWORD(wParam);
+        switch (wmId)
         {
-            int newLayer = id;
-            if (newLayer == currentLayer)
-            {
-                // Hide current panel
-                ShowWindow(layerPanels[currentLayer], SW_HIDE);
-                EnableWindow(layerPanels[currentLayer], FALSE);
-                HWND hChild = GetNextDlgGroupItem(hDlg, layerPanels[currentLayer], FALSE);
-                while (hChild)
-                {
-                    ShowWindow(hChild, SW_HIDE);
-                    EnableWindow(hChild, FALSE);
-                    hChild = GetNextDlgGroupItem(hDlg, hChild, TRUE);
-                }
-                currentLayer = 0;
-            }
-            else
-            {
-                // Hide current panel if any
-                if (currentLayer != 0)
-                {
-                    ShowWindow(layerPanels[currentLayer], SW_HIDE);
-                    EnableWindow(layerPanels[currentLayer], FALSE);
-                    HWND hChild = GetNextDlgGroupItem(hDlg, layerPanels[currentLayer], FALSE);
-                    while (hChild)
-                    {
-                        ShowWindow(hChild, SW_HIDE);
-                        EnableWindow(hChild, FALSE);
-                        hChild = GetNextDlgGroupItem(hDlg, hChild, TRUE);
-                    }
-                }
-                // Show new panel
-                ShowWindow(layerPanels[newLayer], SW_SHOW);
-                EnableWindow(layerPanels[newLayer], TRUE);
-                HWND hChild = GetNextDlgGroupItem(hDlg, layerPanels[newLayer], FALSE);
-                while (hChild)
-                {
-                    ShowWindow(hChild, SW_SHOW);
-                    EnableWindow(hChild, TRUE);
-                    hChild = GetNextDlgGroupItem(hDlg, hChild, TRUE);
-                }
-                currentLayer = newLayer;
-            }
+        case IDOK:
+        case IDCANCEL:
+            EndDialog(hDlg, wmId);
             return (INT_PTR)TRUE;
-        }
-
-        // Handle Module Button Clicks
-        if (notifyCode == BN_CLICKED)
-        {
-            std::unique_ptr<DecisionComponent> component;
-            switch (id)
-            {
-            case IDC_BUTTON_COGNITIVE_READINESS:
-                component = std::make_unique<CognitiveReadiness>();
-                break;
-            case IDC_BUTTON_EMOTIONAL_CALIB:
-                component = std::make_unique<EmotionalCalibration>();
-                break;
-            case IDC_BUTTON_IMPULSE_ALIGN:
-                component = std::make_unique<ImpulseAlignment>();
-                break;
-            case IDC_BUTTON_CORE_VALUES:
-                component = std::make_unique<CoreMetaValueSpecification>();
-                break;
-            case IDC_BUTTON_ETHICAL_COHERENCE:
-                component = std::make_unique<EthicalCoherence>();
-                break;
-            case IDC_BUTTON_TIME_HORIZONS:
-                component = std::make_unique<TimeHorizonIntegration>();
-                break;
-            case IDC_BUTTON_BIAS_TESTING:
-                component = std::make_unique<BiasAssumptionTesting>();
-                break;
-            case IDC_BUTTON_UNCERTAINTY_MGMT:
-                component = std::make_unique<UncertaintyComplexityManagement>();
-                break;
-            case IDC_BUTTON_INTERNAL_DIALOGUE:
-                component = std::make_unique<InternalRoleDialogue>();
-                break;
-            case IDC_BUTTON_SOCIAL_ECO:
-                component = std::make_unique<SocialEcologicalAnalysis>();
-                break;
-            case IDC_BUTTON_FEEDBACK_LOOPS:
-                component = std::make_unique<FeedbackLearningIntegration>();
-                break;
-            case IDC_BUTTON_FAST_LOOP:
-                g_decisionLoop->runFastLoop(hDlg);
-                break;
-            case IDC_BUTTON_TRIAGE_MODE:
-                g_decisionLoop->runTriageMode(hDlg);
-                break;
-            case IDC_BUTTON_GROUP_MODE:
-                g_decisionLoop->runGroupMode(hDlg);
-                break;
-            case IDC_BUTTON_PROFILE:
-                MessageBox(hDlg, L"User profile and settings (not implemented).", L"Profile", MB_OK);
-                break;
-            case IDCANCEL:
-                EndDialog(hDlg, LOWORD(wParam));
-                return (INT_PTR)TRUE;
-            }
-
-            if (component)
-            {
-                component->execute(hDlg);
-                float score = component->getScore();
-                moduleScores[id] = score;
-
-                // Update progress bar
-                HWND hProgress = NULL;
-                switch (id)
-                {
-                case IDC_BUTTON_COGNITIVE_READINESS: hProgress = GetDlgItem(hDlg, IDC_STATIC_COGNITIVE_SCORE); break;
-                case IDC_BUTTON_EMOTIONAL_CALIB: hProgress = GetDlgItem(hDlg, IDC_STATIC_EMOTIONAL_SCORE); break;
-                case IDC_BUTTON_IMPULSE_ALIGN: hProgress = GetDlgItem(hDlg, IDC_STATIC_IMPULSE_SCORE); break;
-                case IDC_BUTTON_CORE_VALUES: hProgress = GetDlgItem(hDlg, IDC_STATIC_VALUES_SCORE); break;
-                case IDC_BUTTON_ETHICAL_COHERENCE: hProgress = GetDlgItem(hDlg, IDC_STATIC_ETHICAL_SCORE); break;
-                case IDC_BUTTON_TIME_HORIZONS: hProgress = GetDlgItem(hDlg, IDC_STATIC_HORIZONS_SCORE); break;
-                case IDC_BUTTON_BIAS_TESTING: hProgress = GetDlgItem(hDlg, IDC_STATIC_BIAS_SCORE); break;
-                case IDC_BUTTON_UNCERTAINTY_MGMT: hProgress = GetDlgItem(hDlg, IDC_STATIC_UNCERTAINTY_SCORE); break;
-                case IDC_BUTTON_INTERNAL_DIALOGUE: hProgress = GetDlgItem(hDlg, IDC_STATIC_DIALOGUE_SCORE); break;
-                case IDC_BUTTON_SOCIAL_ECO: hProgress = GetDlgItem(hDlg, IDC_STATIC_SOCIAL_SCORE); break;
-                case IDC_BUTTON_FEEDBACK_LOOPS: hProgress = GetDlgItem(hDlg, IDC_STATIC_FEEDBACK_SCORE); break;
-                }
-                if (hProgress)
-                {
-                    SendMessage(hProgress, PBM_SETRANGE, 0, MAKELPARAM(0, 10));
-                    SendMessage(hProgress, PBM_SETPOS, (WPARAM)(score), 0);
-                }
-
-                // Display report
-                std::wstring wReport = StringToWString(component->getReport());
-                SetWindowText(hEditReport, wReport.c_str());
-            }
         }
         break;
     }
 
     case WM_DRAWITEM:
     {
-        if (((LPDRAWITEMSTRUCT)lParam)->CtlID == IDC_BUTTON_COGNITIVE) {
-            DrawModernButton((LPDRAWITEMSTRUCT)lParam);
+        LPDRAWITEMSTRUCT pdis = (LPDRAWITEMSTRUCT)lParam;
+        switch (pdis->CtlID)
+        {
+        case IDC_BUTTON_COGNITIVE:
+        case IDC_BUTTON_VALUE:
+        case IDC_BUTTON_SYSTEMS:
+        case IDC_BUTTON_IMPLEMENTATION:
+            DrawModernButton(pdis);
             return TRUE;
         }
+        break;
+    }
 
-        LPDRAWITEMSTRUCT pdis = (LPDRAWITEMSTRUCT)lParam;
-        int id = pdis->CtlID;
-        COLORREF btnColor = RGB(255, 255, 255); // Default
-        if (id == IDC_BUTTON_COGNITIVE || id == IDC_BUTTON_COGNITIVE_READINESS ||
-            id == IDC_BUTTON_EMOTIONAL_CALIB || id == IDC_BUTTON_IMPULSE_ALIGN)
-            btnColor = COLOR_COGNITIVE;
-        else if (id == IDC_BUTTON_VALUE || id == IDC_BUTTON_CORE_VALUES ||
-            id == IDC_BUTTON_ETHICAL_COHERENCE || id == IDC_BUTTON_TIME_HORIZONS)
-            btnColor = COLOR_VALUE;
-        else if (id == IDC_BUTTON_SYSTEMS || id == IDC_BUTTON_BIAS_TESTING ||
-            id == IDC_BUTTON_UNCERTAINTY_MGMT || id == IDC_BUTTON_INTERNAL_DIALOGUE ||
-            id == IDC_BUTTON_SOCIAL_ECO)
-            btnColor = COLOR_SYSTEMS;
-        else if (id == IDC_BUTTON_IMPLEMENTATION || id == IDC_BUTTON_FEEDBACK_LOOPS)
-            btnColor = COLOR_IMPLEMENTATION;
+    case WM_CLOSE:
+        EndDialog(hDlg, 0);
+        return (INT_PTR)TRUE;
 
-        HBRUSH hBrush = CreateSolidBrush(btnColor);
-        FillRect(pdis->hDC, &pdis->rcItem, hBrush);
-        DeleteObject(hBrush);
-
-        HBRUSH hBorderBrush = CreateSolidBrush(RGB(150, 150, 150));
-        FrameRect(pdis->hDC, &pdis->rcItem, hBorderBrush);
-        DeleteObject(hBorderBrush);
-
-        WCHAR szText[256];
-        GetWindowText(pdis->hwndItem, szText, 256);
-        SetBkMode(pdis->hDC, TRANSPARENT);
-        SetTextColor(pdis->hDC, RGB(0, 0, 0));
-        DrawText(pdis->hDC, szText, -1, &pdis->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-
-        return TRUE;
+    case WM_CTLCOLORBTN:
+    {
+        HDC hdcButton = (HDC)wParam;
+        HWND hwndButton = (HWND)lParam;
+        int buttonId = GetDlgCtrlID(hwndButton);
+        
+        switch (buttonId)
+        {
+        case IDC_BUTTON_COGNITIVE:
+            return (INT_PTR)hBrushCognitive;
+        case IDC_BUTTON_VALUE:
+            return (INT_PTR)hBrushValue;
+        case IDC_BUTTON_SYSTEMS:
+            return (INT_PTR)hBrushSystems;
+        case IDC_BUTTON_IMPLEMENTATION:
+            return (INT_PTR)hBrushImplementation;
+        }
+        break;
     }
 
     case WM_DESTROY:
     {
-        DeleteObject(hBrushCognitive);
-        DeleteObject(hBrushValue);
-        DeleteObject(hBrushSystems);
-        DeleteObject(hBrushImplementation);
-
+        if (g_decisionLoop)
+        {
+            delete g_decisionLoop;
+            g_decisionLoop = nullptr;
+        }
+        
+        if (hBrushCognitive) DeleteObject(hBrushCognitive);
+        if (hBrushValue) DeleteObject(hBrushValue);
+        if (hBrushSystems) DeleteObject(hBrushSystems);
+        if (hBrushImplementation) DeleteObject(hBrushImplementation);
         if (hPenBorder) DeleteObject(hPenBorder);
         if (hPenHighlight) DeleteObject(hPenHighlight);
         
         return (INT_PTR)TRUE;
     }
 
-    case WM_CLOSE:
-        EndDialog(hDlg, 0);
-        return (INT_PTR)TRUE;
-    }
+    } 
     return (INT_PTR)FALSE;
-}
+} 
 
 std::wstring StringToWString(const std::string& str)
 {
+    // First call to get required size (this is correct)
     int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), NULL, 0);
     std::wstring wstrTo(size_needed, 0);
-    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), &wstrTo[0], size_needed);
+
+    // Fix the second call - it needs 6 parameters, not 5
+    MultiByteToWideChar(
+        CP_UTF8,                    // CodePage
+        0,                          // dwFlags
+        str.c_str(),               // lpMultiByteStr
+        (int)str.size(),           // cbMultiByte
+        &wstrTo[0],                // lpWideCharStr
+        size_needed                 // cchWideChar
+    );
     return wstrTo;
 }
 
+int WINAPI WinMain(
+    HINSTANCE hInstance,
+    HINSTANCE hPrevInstance,
+    LPSTR lpCmdLine,      // Note: Changed to LPSTR for ANSI
+    int nCmdShow)
+{
+    UNREFERENCED_PARAMETER(hPrevInstance);
+    UNREFERENCED_PARAMETER(lpCmdLine);
 
+    INITCOMMONCONTROLSEX iccex = { 
+        sizeof(INITCOMMONCONTROLSEX),
+        ICC_WIN95_CLASSES | ICC_BAR_CLASSES | ICC_PROGRESS_CLASS | ICC_STANDARD_CLASSES
+    };
+    if (!InitCommonControlsEx(&iccex))
+    {
+        MessageBox(NULL, L"Failed to initialize common controls.", L"Error", MB_ICONERROR);
+        return 1;
+    }
+
+    g_decisionLoop = new DecisionLoop();
+    if (!g_decisionLoop)
+    {
+        MessageBox(NULL, L"Failed to initialize DecisionLoop.", L"Error", MB_ICONERROR);
+        return 1;
+    }
+
+    INT_PTR result = DialogBox(hInstance, MAKEINTRESOURCE(IDD_MAIN_DIALOG), NULL, MainDlgProc);
+    
+    if (result == -1)
+    {
+        DWORD error = GetLastError();
+        WCHAR errorMsg[256];
+        swprintf_s(errorMsg, L"Dialog creation failed. Error code: %d", error);
+        MessageBox(NULL, errorMsg, L"Error", MB_ICONERROR);
+    }
+
+    delete g_decisionLoop;
+    g_decisionLoop = nullptr;
+
+    return (int)result;
+}

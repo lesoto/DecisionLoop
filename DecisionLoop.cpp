@@ -95,31 +95,3 @@ std::string DecisionLoop::generateFullReport() {
 
     return report.str();
 }
-
-int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
-{
-    UNREFERENCED_PARAMETER(hPrevInstance);
-    UNREFERENCED_PARAMETER(lpCmdLine);
-
-    // Create the main dialog
-    DialogBox(hInstance, MAKEINTRESOURCE(IDD_MAIN_DIALOG), NULL, [](HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) -> INT_PTR {
-        static DecisionLoop decisionLoop;
-
-        switch (message)
-        {
-        case WM_INITDIALOG:
-            return TRUE;
-
-        case WM_COMMAND:
-            if (LOWORD(wParam) == IDCANCEL)
-            {
-                EndDialog(hDlg, LOWORD(wParam));
-                return TRUE;
-            }
-            break;
-        }
-        return FALSE;
-    });
-
-    return 0;
-}

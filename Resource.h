@@ -54,8 +54,24 @@
 #define IDC_BUTTON_GROUP_MODE 336
 #define IDC_EDIT_REPORT          337
 
-#define COLOR_COGNITIVE      RGB(100, 149, 237) // Cornflower Blue
-#define COLOR_VALUE          RGB(60, 179, 113) // Medium Sea Green
-#define COLOR_SYSTEMS        RGB(255, 165, 0)   // Orange
-#define COLOR_IMPLEMENTATION RGB(148, 0, 211)   // Dark Violet
+#define COLOR_COGNITIVE      RGB(100, 149, 237) 
+#define COLOR_VALUE          RGB(60, 179, 113) 
+#define COLOR_SYSTEMS        RGB(255, 165, 0)   
+#define COLOR_IMPLEMENTATION RGB(148, 0, 211)   
+
+#define IDR_MAINFRAME        401
+#define IDR_TOOLBAR         402
+
+#define ID_FILE_NEW         1001
+#define ID_FILE_OPEN        1002
+#define ID_FILE_SAVE        1003
+#define ID_FILE_EXIT        1004
+#define ID_VIEW_COGNITIVE   1101
+#define ID_VIEW_VALUE       1102
+#define ID_VIEW_SYSTEMS     1103
+#define ID_VIEW_IMPLEMENT   1104
+#define ID_MODE_FAST        1201
+#define ID_MODE_TRIAGE      1202
+#define ID_MODE_GROUP       1203
+#define ID_HELP_ABOUT       1301
 
